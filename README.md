@@ -36,6 +36,7 @@ These items require the boss's input or external service setup. None of them can
 | **Real room photos** | `src/lib/booking-data.ts` → `ROOMS[].image` | Unsplash stock photos |
 | **Run the booking database** | Paste `supabase/schema.sql` into the Supabase SQL editor | Not run yet — without it the site still works, but the Google Form cannot prevent double bookings |
 | **Supabase env vars** | `.env.local` + Vercel → `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Unset (booking falls back to Google Form only) |
+| **Create a staff login** | Supabase → Authentication → Users, then `insert into public.staff` | None yet — `#/admin` shows "no access" until one exists |
 | **Real Formspree ID** | `src/components/pages/contact.tsx` line 56 | `your-form-id` |
 | **Real newsletter provider** | `src/components/pages/insights.tsx` → `onSubscribe` | Just flips button label |
 | **Real images** | All `images.unsplash.com` URLs across `src/components/pages/*` | Stock photos |
@@ -161,6 +162,7 @@ my-project/
 - **`src/components/pages/pricing.tsx`** — 3 pricing tiers (Starter/Professional/Enterprise) with "Most Popular" highlight, 6 workspace add-ons grid, 6-item FAQ accordion.
 - **`src/components/pages/insights.tsx`** — Featured article (large 2-col card), 5-article grid (cards wrapped in `<a>` for full-card click), newsletter signup card.
 - **`src/components/pages/booking.tsx`** — 🆕 **Room booking page** (`#/book`). Six selectable room cards, a validated booking form with a live price estimate, and a confirmation screen. Submits into the team's existing Google Form (see "Room booking" below). Deep-linkable: `#/book?room=event-space` preselects a room.
+- **`src/components/pages/admin.tsx`** — 🆕 **Staff booking inbox** (`#/admin`). Internal tool: sign in, see bookings grouped by date, Confirm / Decline / Cancel. Not linked from anywhere; protected by row level security, not by being unlisted.
 - **`src/components/pages/contact.tsx`** — Contact info column + working form with honeypot, real error handling, service preselect from URL (`#/contact?service=Serviced+Office`), Google Maps iframe embed.
 - **`src/components/pages/legal.tsx`** — One reusable component for all 4 legal pages (privacy/terms/complaints/disclosures). Takes a `which` prop.
 - **`src/components/pages/not-found.tsx`** — 404 page with big gradient "404", home button, back button.
@@ -219,6 +221,17 @@ unreachable, the middle step is skipped and the page behaves exactly as it did
 before — a booking in the sheet beats a lost enquiry. Set it up with
 `supabase/schema.sql`; see [`supabase/README.md`](supabase/README.md).
 
+### Staff inbox
+
+With the database running, the office can work at **`#/admin`** instead of in
+the spreadsheet: bookings grouped by date, colour-coded by status, one-click
+Confirm / Decline / Cancel. Declining releases the slot immediately.
+
+The page is not in the navbar, footer or sitemap — but that is convenience, not
+security. Row level security is what protects the data: a stranger who guesses
+the URL and signs up still sees an empty list, because every policy calls
+`is_staff()`.
+
 ### What the website adds on top of the raw form
 
 | | Google Form alone | The `#/book` page |
@@ -243,10 +256,16 @@ The original form is still linked at the bottom of the page for anyone who prefe
 | All booking page text (3 languages) | `src/lib/i18n/booking-content.ts` |
 | The page itself | `src/components/pages/booking.tsx` |
 | Rate table used on other pages | `src/components/blocks/room-rates.tsx` |
+| Database schema (rooms, rules, RLS) | `supabase/schema.sql` |
+| Database client + error mapping | `src/lib/supabase.ts` |
+| Staff inbox page | `src/components/pages/admin.tsx` |
+| Google Sheet formatter | `supabase/google-sheet-formatter.gs` |
 
 ### Changing a rate or a room
 
 Edit `ROOMS` in `src/lib/booking-data.ts`. The booking page, the rate tables on Pricing and Services, and the homepage booking band all update together.
+
+If the database is running, change the matching row in section 3 of `supabase/schema.sql` and re-run the script — it is idempotent, and `supabase/tests/schema.test.mjs` asserts the two stay in sync.
 
 ⚠️ Also update the **"Room Information"** description block inside the Google Form itself — that text is maintained in Google and the code can't reach it.
 

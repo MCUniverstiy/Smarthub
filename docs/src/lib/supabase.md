@@ -28,6 +28,11 @@ nothing else.
 | `checkAvailability(...)` | Courtesy pre-check before submitting. |
 | `BookingErrorCode` | The reasons a booking can be refused. |
 | `BusySlot` | `{ starts, ends, seats }`. |
+| `isStaff()` | Asks the database whether the signed-in user may see bookings. |
+| `fetchBookings()` | The staff inbox, from the `bookings_inbox` view. |
+| `updateBookingStatus()` | Confirm / decline / cancel. |
+| `signIn()` / `signOut()` | Staff authentication for `#/admin`. |
+| `BOOKING_STATUSES`, `BookingStatus`, `InboxBooking` | Types for the admin page. |
 
 ## Key Concepts
 
@@ -41,6 +46,21 @@ on later by adding two environment variables.
 
 The check also rejects the placeholder value from `.env.example`, so a
 half-finished setup does not count as configured.
+
+### Sessions are persisted
+
+The staff admin page signs people in, and they should not be logged out by a
+page refresh — so `persistSession` is on, under the `smarthub-auth` storage
+key. Members of the public booking a room never sign in, so they simply have no
+session and nothing is stored for them.
+
+### The staff helpers are not a second security layer
+
+`fetchBookings`, `updateBookingStatus` and `isStaff` are ordinary calls made
+with the same public anon key. They only return data because the caller has a
+valid session belonging to a user listed in `public.staff`; row level security
+enforces that server-side. A signed-in non-staff user gets an empty array, not
+an error.
 
 ### The anon key is public, and that is fine
 

@@ -10,7 +10,7 @@
  *   swaps content based on the hash (e.g. `#/about`, `#/pricing`).
  *
  * WHAT IT DOES:
- *   - Defines a `Route` type union (the 13 possible routes)
+ *   - Defines a `Route` type union (the 14 possible routes)
  *   - Maintains two lookup tables: URL-string ↔ Route-name
  *   - Exposes `RouterProvider` to hold the current route state
  *   - Listens for `hashchange` events so back/forward buttons work
@@ -64,6 +64,7 @@ export type Route =
   | "terms"
   | "complaints"
   | "disclosures"
+  | "admin"
   | "not-found";
 
 /**
@@ -87,6 +88,7 @@ const ROUTE_MAP: Record<string, Route> = {
   "/terms": "terms",
   "/complaints": "complaints",
   "/disclosures": "disclosures",
+  "/admin": "admin",
 };
 
 /**
@@ -107,6 +109,7 @@ const REVERSE_MAP: Record<Route, string> = {
   terms: "/terms",
   complaints: "/complaints",
   disclosures: "/disclosures",
+  admin: "/admin",
   "not-found": "/not-found",
 };
 
@@ -127,7 +130,7 @@ const REVERSE_MAP: Record<Route, string> = {
  *      otherwise return "not-found".
  *
  * Inputs: none (reads from `window.location.hash`)
- * Returns: a `Route` value (one of the 13 literals above)
+ * Returns: a `Route` value (one of the 14 literals above)
  */
 function parseHash(): Route {
   if (typeof window === "undefined") return "home";

@@ -714,6 +714,14 @@ grant usage on schema public to anon, authenticated;
 grant select on public.rooms to anon, authenticated;
 grant insert on public.bookings to anon, authenticated;
 
+-- Staff need to read and update bookings from the admin page. RLS still
+-- decides WHICH rows they see (the policies above call is_staff()), but
+-- without a table-level GRANT the role cannot touch the table at all.
+-- A signed-in user who is NOT in public.staff gets zero rows, not an
+-- error — which is exactly what we want.
+grant select, update on public.bookings to authenticated;
+grant select on public.staff to authenticated;
+
 revoke all on function public.request_booking(
   text, text, text, text, text, text, date, time, time, integer,
   public.payment_method, text) from public;
@@ -724,6 +732,10 @@ grant execute on function public.request_booking(
 grant execute on function public.room_busy_slots(text, date) to anon, authenticated;
 grant execute on function public.is_slot_available(text, date, time, time, integer) to anon, authenticated;
 grant execute on function public.earliest_booking_date() to anon, authenticated;
+
+-- The admin page calls is_staff() to decide whether to show the inbox.
+-- Safe to expose: it only ever reports on the CALLER's own account.
+grant execute on function public.is_staff() to authenticated;
 
 
 -- =====================================================================
@@ -758,6 +770,8 @@ order by b.booking_date, b.start_time;
 
 comment on view public.bookings_inbox is
   'Staff-facing list of bookings. Respects RLS via security_invoker.';
+
+grant select on public.bookings_inbox to authenticated;
 
 
 -- =====================================================================

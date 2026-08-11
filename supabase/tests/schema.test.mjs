@@ -187,5 +187,36 @@ await expectFail("anon cannot delete bookings",
   () => db.query("delete from public.bookings"));
 await db.exec("reset role");
 
+console.log("\n=== 17. Staff inbox + admin page plumbing ===");
+// The admin page reads bookings_inbox and calls is_staff().
+const inboxCols = await db.query("select * from public.bookings_inbox limit 1");
+const names = inboxCols.fields.map(f => f.name);
+for (const c of ["reference","status","booking_date","start_time","end_time","room",
+                 "attendees","full_name","email","phone","quoted_total"]) {
+  ok(`bookings_inbox exposes ${c}`, names.includes(c), JSON.stringify(names));
+}
+// is_staff() must be callable and false for a non-staff caller.
+const staffNo = await db.query("select public.is_staff() v");
+ok("is_staff() returns false when not signed in", staffNo.rows[0].v === false, String(staffNo.rows[0].v));
+
+// Confirming then cancelling must release the slot (what the admin buttons do).
+const relRoom = "meeting-c", relDate = far;
+await db.query(`delete from public.bookings where room_id=$1 and booking_date=$2`,[relRoom,relDate]);
+const relA = await book({ room: relRoom, date: relDate, start: "14:00", end: "15:00", pax: 2, email:"rel@example.com" });
+await db.query("update public.bookings set status='confirmed' where reference=$1",[relA.rows[0].reference]);
+await expectFail("confirmed booking still blocks the slot",
+  () => book({ room: relRoom, date: relDate, start: "14:00", end: "15:00", pax: 2, email:"rel2@example.com" }),
+  "conflicting key");
+await db.query("update public.bookings set status='declined' where reference=$1",[relA.rows[0].reference]);
+const relB = await book({ room: relRoom, date: relDate, start: "14:00", end: "15:00", pax: 2, email:"rel3@example.com" });
+ok("declining releases the slot for someone else", !!relB.rows[0].reference);
+
+// Grants the admin page depends on.
+const g = await db.query(`select privilege_type from information_schema.role_table_grants
+  where table_name='bookings' and grantee='authenticated'`);
+const privs = g.rows.map(r => r.privilege_type);
+ok("authenticated may SELECT bookings (RLS still filters)", privs.includes("SELECT"), JSON.stringify(privs));
+ok("authenticated may UPDATE bookings", privs.includes("UPDATE"), JSON.stringify(privs));
+
 console.log(`\n${"=".repeat(58)}\nRESULT: ${pass} passed, ${fail} failed\n${"=".repeat(58)}`);
 process.exit(fail ? 1 : 0);

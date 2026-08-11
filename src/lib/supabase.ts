@@ -47,12 +47,18 @@ export const isSupabaseConfigured = Boolean(
  * The client, created once and reused. `null` when unconfigured — the
  * callers below all guard on `isSupabaseConfigured` first.
  *
- * `persistSession: false` because visitors booking a room are anonymous;
- * we never sign anyone in, so there is no session worth keeping.
+ * Sessions ARE persisted, because the staff admin page (`#/admin`) signs
+ * people in and they should not be logged out by a page refresh. Members
+ * of the public booking a room never sign in, so they simply have no
+ * session — nothing is stored for them.
  */
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(url!, anonKey!, {
-      auth: { persistSession: false, autoRefreshToken: false },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        storageKey: "smarthub-auth",
+      },
     })
   : null;
 
@@ -219,6 +225,133 @@ export async function getBusySlots(
     }));
   } catch {
     return [];
+  }
+}
+
+/* ================================================================
+   STAFF SIDE — used only by the admin page (#/admin)
+   ================================================================
+   Everything below requires a signed-in user who appears in
+   public.staff. Row level security enforces that server-side: a
+   signed-in user who is NOT staff simply sees zero rows. None of this
+   is reachable with the plain anon key.
+   ================================================================ */
+
+/** The booking statuses the office can set. Mirrors the enum in SQL. */
+export const BOOKING_STATUSES = [
+  "pending",
+  "confirmed",
+  "declined",
+  "cancelled",
+] as const;
+
+export type BookingStatus = (typeof BOOKING_STATUSES)[number];
+
+/** One row of the staff inbox, as returned by `bookings_inbox`. */
+export type InboxBooking = {
+  reference: string;
+  status: BookingStatus;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  room: string;
+  attendees: number;
+  full_name: string;
+  email: string;
+  phone: string;
+  company: string;
+  br_number: string;
+  payment_method: string;
+  quoted_total: number | null;
+  notes: string | null;
+  internal_note: string | null;
+  created_at: string;
+};
+
+/**
+ * isStaff — is the signed-in user allowed to see bookings?
+ *
+ * Asks the database rather than trusting anything client-side. Returns
+ * false when signed out or when the account is not in public.staff.
+ */
+export async function isStaff(): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { data, error } = await supabase.rpc("is_staff");
+    return !error && data === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * fetchBookings — the office inbox, newest booking date first.
+ *
+ * Reads the `bookings_inbox` view, which is `security_invoker` and so
+ * respects the same RLS policies as the underlying table. A non-staff
+ * account gets an empty list, not an error.
+ */
+export async function fetchBookings(): Promise<InboxBooking[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from("bookings_inbox")
+      .select("*")
+      .order("booking_date", { ascending: true })
+      .order("start_time", { ascending: true });
+    if (error || !Array.isArray(data)) return [];
+    return data as InboxBooking[];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * updateBookingStatus — confirm, decline or cancel a booking.
+ *
+ * Declining or cancelling releases the slot immediately: the exclusion
+ * constraint only counts pending and confirmed bookings, so the time
+ * becomes bookable again the moment this succeeds.
+ */
+export async function updateBookingStatus(
+  reference: string,
+  status: BookingStatus
+): Promise<{ ok: boolean; message?: string }> {
+  if (!supabase) return { ok: false, message: "Supabase is not configured." };
+  try {
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status })
+      .eq("reference", reference);
+    if (error) return { ok: false, message: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Network error" };
+  }
+}
+
+/** Sign a staff member in with email + password. */
+export async function signIn(
+  email: string,
+  password: string
+): Promise<{ ok: boolean; message?: string }> {
+  if (!supabase) return { ok: false, message: "Supabase is not configured." };
+  try {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, message: error.message };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Network error" };
+  }
+}
+
+/** Sign the current staff member out. */
+export async function signOut(): Promise<void> {
+  if (!supabase) return;
+  try {
+    await supabase.auth.signOut();
+  } catch {
+    /* already signed out */
   }
 }
 

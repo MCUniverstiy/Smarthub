@@ -2,7 +2,7 @@
 
 ## What This File Does
 
-This is a **custom hash router** built from scratch — it does NOT use Next.js's built-in file-based routing. The entire site lives at a single URL `/`, and this router swaps page content based on the URL hash (the `#...` part of a URL like `/#/about` or `/#/pricing`). It defines the 13 possible routes, exposes a `RouterProvider` to hold the current route state, listens for `hashchange` events so the browser back/forward buttons work, scrolls to top on route change, and provides a `<RouterLink>` component for navigation.
+This is a **custom hash router** built from scratch — it does NOT use Next.js's built-in file-based routing. The entire site lives at a single URL `/`, and this router swaps page content based on the URL hash (the `#...` part of a URL like `/#/about` or `/#/pricing`). It defines the 14 possible routes, exposes a `RouterProvider` to hold the current route state, listens for `hashchange` events so the browser back/forward buttons work, scrolls to top on route change, and provides a `<RouterLink>` component for navigation.
 
 ## Where It Lives in the Project
 
@@ -12,7 +12,7 @@ This is a **custom hash router** built from scratch — it does NOT use Next.js'
 
 ## What It Produces
 
-- A `Route` TypeScript union type (the 13 possible routes)
+- A `Route` TypeScript union type (the 14 possible routes)
 - `RouterProvider` — wraps the app to provide route state via React Context
 - `useRouter()` hook — lets any component read the current route or call `navigate()`
 - `RouterLink` component — a router-aware `<a>` element for navigation
@@ -32,7 +32,7 @@ This is a **custom hash router** built from scratch — it does NOT use Next.js'
 ## Section-by-Section Breakdown
 
 ### 1. `Route` union type (lines 5–17)
-A TypeScript union listing the 13 possible route names (including `book` for the room-booking page). The compiler will catch typos at build time.
+A TypeScript union listing the 14 possible route names (including `book` for the room-booking page). The compiler will catch typos at build time.
 
 ### 2. `ROUTE_MAP` (lines 19–32)
 Lookup table translating URL strings (the part after `#`) into Route names. `""` and `"/"` both map to `"home"` so an empty hash shows the home page.

@@ -170,6 +170,27 @@ Two things the database makes possible that the form could not:
 
 ---
 
+## The staff inbox (`#/admin`)
+
+Once the SQL is run and you have added yourself to `public.staff`, the office
+can work from the site instead of the spreadsheet. Go to **`/#/admin`** and sign
+in with the Supabase Auth account you added.
+
+Bookings are grouped by date and colour-coded by status, with one-click
+**Confirm**, **Decline** and **Cancel**. Declining or cancelling releases the
+slot immediately — the exclusion constraint only counts pending and confirmed
+bookings, so that time becomes bookable again straight away.
+
+The page is not linked from the navbar, the footer or the sitemap. That is
+convenience, not security: what actually protects the data is row level
+security. A stranger who guesses the URL, signs up and signs in still gets an
+**empty list**, because every policy on `bookings` calls `is_staff()`.
+
+To create a staff login: Supabase → Authentication → Users → Add user, then run
+the `insert into public.staff` snippet above with that email.
+
+---
+
 ## Making the Google Sheet readable
 
 `google-sheet-formatter.gs` is an Apps Script that formats the response sheet:
