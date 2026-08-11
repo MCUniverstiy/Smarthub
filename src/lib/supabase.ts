@@ -423,10 +423,10 @@ export async function checkAvailability(
 // Same shape as the booking API above: one function for the public that
 // writes through an RPC, and staff-only readers that rely on RLS.
 //
-// The contact page still POSTs to Formspree as well. That is deliberate —
-// Formspree is what actually emails the office, and until something else
-// sends that email it must keep running. This just means the enquiry is
-// also kept as a record rather than only as an email.
+// This is the primary path for contact enquiries. The contact page may
+// also POST to an optional email relay (Formspree or similar), but only
+// if one is configured — the database is the system of record. For email
+// alerts, supabase/notify-email.sql sends from the database itself.
 
 /** What the contact form collects. */
 export type EnquirySubmission = {
@@ -450,9 +450,9 @@ export type EnquiryResult =
 /**
  * submitEnquiry — record a contact-form enquiry in the database.
  *
- * Failure here is not fatal to the user's experience: the contact page
- * treats the Formspree POST as the thing that must succeed, and this as
- * a bonus. So callers can safely ignore a false result.
+ * Returns a result object rather than throwing, so a caller can decide
+ * what a failure means. The contact page treats this as the path that
+ * matters and only shows an error if nothing at all stored the enquiry.
  */
 export async function submitEnquiry(
   data: EnquirySubmission

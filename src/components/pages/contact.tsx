@@ -10,12 +10,11 @@
  *
  * WHAT IT DOES
  *   Renders <ContactPage /> — a small PageHero, then a two-column section
- *   (info + form). The form submits to Formspree AND saves the enquiry to
- *   Supabase, with four status states: idle / sending / success / error.
- *   Formspree is what emails the office; Supabase is what keeps the enquiry
- *   as a searchable record in the staff inbox (#/admin). Either one
- *   succeeding counts as a success, so one being down does not lose the
- *   message or make the visitor send it twice. A hidden honeypot
+ *   (info + form). The form saves the enquiry to Supabase, where the team
+ *   reads it in the staff inbox (#/admin), with four status states:
+ *   idle / sending / success / error. An optional email relay
+ *   (NEXT_PUBLIC_FORMSPREE_ENDPOINT) is POSTed to as well, but only if it
+ *   is actually configured — the database is the system of record. A hidden honeypot
  *   field traps spam bots. The service dropdown can be preselected via a
  *   `?service=...` query string in the URL (used by the pricing page deep-links).
  *   Below the form: a Google Maps iframe showing the office location.
@@ -98,10 +97,12 @@ export function ContactPage() {
    *   2. Build a FormData object from the form fields.
    *   3. Honeypot check: if the hidden `_gotcha` field has any value, a bot
    *      filled it in — pretend success and abort (don't actually send).
-   *   4. Set status to "sending", POST the FormData to Formspree.
-   *   5. On 2xx response: set status to "success", reset the form, revert to
-   *      "idle" after 5 seconds.
-   *   6. On non-2xx or network error: set status to "error".
+   *   4. Set status to "sending", save the enquiry to Supabase.
+   *   5. If an email relay endpoint is configured, POST the FormData there
+   *      too. Skipped entirely when it is unset or still the placeholder.
+   *   6. If either stored it: "success", reset the form, back to "idle"
+   *      after 5 seconds. If neither did: "error", so the visitor knows to
+   *      phone or email instead.
    */
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -120,15 +121,13 @@ export function ContactPage() {
 
     setStatus("sending");
 
-    // ---- Save the enquiry to Supabase -------------------------------
-    // Fired alongside the Formspree POST, not instead of it. Formspree is
-    // what actually emails the office; this is what keeps the enquiry as a
-    // record the team can search, filter and mark as replied in #/admin.
+    // ---- 1. Save the enquiry to the database ------------------------
+    // This is the primary path. The database is the system of record: it
+    // keeps the enquiry where the team can search it, filter it and mark
+    // it replied in #/admin, and it has no monthly quota.
     //
-    // Deliberately awaited *before* the Formspree call rather than after,
-    // so that a slow Formspree response cannot leave the record unsaved if
-    // the user closes the tab. Both are fast; the ordering is about which
-    // one survives a half-finished submit.
+    // Awaited before the optional email relay below, so that a slow relay
+    // cannot leave the enquiry unsaved if the visitor closes the tab.
     const dbEnquiry = await submitEnquiry({
       fullName: [formData.get("first_name"), formData.get("last_name")]
         .map((v) => String(v ?? "").trim())
@@ -142,39 +141,43 @@ export function ContactPage() {
       lang,
     }).catch(() => ({ ok: false as const }));
 
-    try {
-      // Form endpoint — set NEXT_PUBLIC_FORMSPREE_ENDPOINT in your .env or Vercel env vars.
-      // Sign up at https://formspree.io to get your own endpoint (looks like https://formspree.io/f/abcd1234).
-      // Until you set this, the form will fail gracefully and show the error message.
-      const endpoint =
-        process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT || "https://formspree.io/f/your-form-id";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
-        headers: { Accept: "application/json" },
-      });
+    // ---- 2. Optionally relay it to a form service -------------------
+    // Formspree (or any drop-in replacement) is entirely optional and OFF
+    // unless NEXT_PUBLIC_FORMSPREE_ENDPOINT is set to a real endpoint. Its
+    // free tier is only 50 submissions a month, so it is a nice-to-have
+    // email relay, never the thing the enquiry depends on.
+    //
+    // The old placeholder default ("your-form-id") is treated as unset:
+    // posting to it would 404 on every submit.
+    const endpoint = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
+    const relayConfigured = Boolean(endpoint && !endpoint.includes("your-form-id"));
 
-      // Success if EITHER path worked. If Formspree is misconfigured but the
-      // database accepted the enquiry, the message is safely stored and the
-      // team will see it in the inbox — telling the visitor it failed would
-      // make them send it twice.
-      if (res.ok || dbEnquiry.ok) {
-        setStatus("success");
-        form.reset();
-        setTimeout(() => setStatus("idle"), 5000);
-      } else {
-        // Real failure — show error so user knows to retry or email us directly
-        setStatus("error");
+    let relayed = false;
+    if (relayConfigured) {
+      try {
+        const res = await fetch(endpoint as string, {
+          method: "POST",
+          body: formData,
+          headers: { Accept: "application/json" },
+        });
+        relayed = res.ok;
+      } catch {
+        // Relay unreachable — irrelevant if the database took the enquiry.
+        relayed = false;
       }
-    } catch {
-      // Formspree unreachable. Still a success if the database took it.
-      if (dbEnquiry.ok) {
-        setStatus("success");
-        form.reset();
-        setTimeout(() => setStatus("idle"), 5000);
-      } else {
-        setStatus("error");
-      }
+    }
+
+    // Success if the enquiry landed anywhere durable. Showing an error
+    // when the database already holds the message would just make the
+    // visitor send it twice.
+    if (dbEnquiry.ok || relayed) {
+      setStatus("success");
+      form.reset();
+      setTimeout(() => setStatus("idle"), 5000);
+    } else {
+      // Nothing stored it. The error state tells them to email or call
+      // instead, and those details are on screen beside the form.
+      setStatus("error");
     }
   }
 

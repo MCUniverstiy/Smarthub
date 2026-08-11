@@ -13,7 +13,7 @@ Built with Next.js 16 + TypeScript + Tailwind CSS 4 + shadcn/ui. Design inspired
 **Quick start:**
 1. Push code to GitHub (private repo)
 2. Go to https://vercel.com/new → import the repo
-3. Add env var `NEXT_PUBLIC_FORMSPREE_ENDPOINT` (get one at https://formspree.io)
+3. Add env vars `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (see `docs/supabase-keys.md`)
 4. Click Deploy
 5. Add your custom domain in Vercel → Settings → Domains
 
@@ -39,7 +39,6 @@ A full pre-merge audit — what was security-tested, what is safe, and what stil
 | **Run the booking database** | Paste `supabase/schema.sql` into the Supabase SQL editor | Not run yet — without it the site still works, but the Google Form cannot prevent double bookings |
 | **Supabase env vars** | `.env.local` + Vercel — where to find the keys: [`docs/supabase-keys.md`](docs/supabase-keys.md) | Unset (booking falls back to Google Form only) |
 | **Create a staff login** | Supabase → Authentication → Users, then `insert into public.staff` — step-by-step in [`docs/staff-login.md`](docs/staff-login.md) | None yet — `#/admin` shows "no access" until one exists |
-| **Real Formspree ID** | `src/components/pages/contact.tsx` line 56 | `your-form-id` |
 | **Real newsletter provider** | `src/components/pages/insights.tsx` → `onSubscribe` | Just flips button label |
 | **Real images** | All `images.unsplash.com` URLs across `src/components/pages/*` | Stock photos |
 | **Real insights articles** | `src/lib/i18n/translations.ts` → `insights.items` + `page-content.ts` → `insights.featured` | Titles + excerpts only |
@@ -323,7 +322,7 @@ python3 scripts/generate-icons.py
 - All extracted to `src/lib/i18n/extra-content.ts`
 
 ### Built 4 legal pages (required for TCSP compliance)
-- Privacy Policy (PDPO-compliant, mentions Formspree US data transfer)
+- Privacy Policy (PDPO-compliant, mentions overseas data transfer)
 - Terms of Use
 - Complaints Procedure (TCSP Code requirement, with Companies Registry escalation)
 - Disclosures (lists all MCM Group entities + licence verification)
@@ -382,7 +381,7 @@ See the table at the top of this README. Summary:
 2. **Replace pricing numbers** with real rate card
 3. **Replace stats** with real numbers (or remove if unverifiable)
 4. **Replace all 40+ Unsplash images** with real Smarthub photos
-5. **Set up Formspree** account and replace `your-form-id` in `contact.tsx` line 56
+5. **Run `supabase/enquiries.sql`** so the contact form stores enquiries (optionally `supabase/notify-email.sql` for email alerts)
 6. **Set up newsletter provider** (Mailchimp / ConvertKit / Loops) and wire up `insights.tsx`
 7. **Write 3+ real Insights articles** (or remove the page until you have them)
 8. **Point `smarthubc.com`** at the Vercel project

@@ -103,7 +103,7 @@ export const extraContent = {
           },
           {
             h: "3. Data Transfer Outside Hong Kong",
-            p: "Our contact form is processed by Formspree (a third-party service based in the United States). By submitting the form, you consent to your data being transferred to and stored in the United States. Our analytics provider (if enabled) may also store data outside Hong Kong. We only transfer data to jurisdictions that provide adequate protection under PDPO Section 33.",
+            p: "Contact form enquiries and room booking requests are stored in our database, hosted by Supabase, and may be processed on servers outside Hong Kong. Room bookings are additionally recorded via Google Forms. By submitting a form, you consent to your data being transferred to and stored in those jurisdictions. Our analytics provider (if enabled) may also store data outside Hong Kong. We only transfer data to jurisdictions that provide adequate protection under PDPO Section 33.",
           },
           {
             h: "4. Data Retention",
@@ -281,7 +281,7 @@ export const extraContent = {
           },
           {
             h: "3. 香港境外資料傳輸",
-            p: "我哋嘅聯絡表格由 Formspree（一家位於美國嘅第三方服務）處理。提交表格即表示您同意您嘅資料被傳輸到美國並儲存於當地。我哋嘅分析服務（如啟用）亦可能將資料儲存於香港境外。我哋只會將資料傳輸到 PDPO 第 33 條下提供足夠保障嘅司法管轄區。",
+            p: "聯絡表格查詢及會議室預訂會儲存喺我哋嘅資料庫（由 Supabase 託管），並可能喺香港境外嘅伺服器處理。會議室預訂亦會經 Google 表單記錄。提交表格即表示您同意您嘅資料被傳輸到該等司法管轄區並儲存於當地。我哋嘅分析服務（如啟用）亦可能將資料儲存於香港境外。我哋只會將資料傳輸到 PDPO 第 33 條下提供足夠保障嘅司法管轄區。",
           },
           {
             h: "4. 資料保留",
@@ -459,7 +459,7 @@ export const extraContent = {
           },
           {
             h: "3. 香港境外资料传输",
-            p: "我们的联络表格由 Formspree（一家位于美国的第三方服务）处理。提交表格即表示您同意您的资料被传输到美国并储存于当地。我们的分析服务（如启用）亦可能将资料储存于香港境外。我们只会将资料传输到 PDPO 第 33 条下提供足够保障的司法管辖区。",
+            p: "联络表格查询及会议室预订会储存在我们的资料库（由 Supabase 托管），并可能在香港境外的伺服器处理。会议室预订亦会经 Google 表单记录。提交表格即表示您同意您的资料被传输到该等司法管辖区并储存于当地。我们的分析服务（如启用）亦可能将资料储存于香港境外。我们只会将资料传输到 PDPO 第 33 条下提供足够保障的司法管辖区。",
           },
           {
             h: "4. 资料保留",

@@ -248,6 +248,25 @@ small badge on the enquiry card.
 Rate limit: 5 unanswered enquiries per email address per 24 hours. Answering
 one clears the count, since only `new` enquiries are counted.
 
+### Getting told when one arrives
+
+Storing an enquiry is not the same as noticing it. Bookings are covered — the
+booking page still posts to the Google Form, so that email still lands. The
+contact form has no such alert, so **somebody has to open `#/admin`**.
+
+If that is not good enough, run [`notify-email.sql`](notify-email.sql). It
+sends the alert from the database itself using `pg_net`, which means:
+
+- No form service in the middle, and no 50-a-month ceiling. Resend's free
+  tier is 3,000 emails/month.
+- The API key lives in Supabase Vault, encrypted, not in the file.
+- The request is asynchronous and wrapped in an exception handler, so a
+  dead email provider cannot slow down or roll back the enquiry itself.
+- `reply_to` is set to the visitor, so the team just hits reply.
+
+It is entirely optional and safe to skip — without the Vault secrets the
+trigger returns early and does nothing.
+
 ---
 
 ## Making the Google Sheet readable
