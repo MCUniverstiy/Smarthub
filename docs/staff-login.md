@@ -123,10 +123,22 @@ You want a row where **`has_login` and `can_sign_in` are both `true`**.
 
 You should land on the booking inbox.
 
-> The `#/admin` page is not linked from the navbar, footer or sitemap — you
-> have to type the URL. **That is convenience, not security.** The real
-> protection is the staff list: anyone can visit the URL, but without a row in
-> `public.staff` they see an empty page.
+> Bookmark it. There is no public link to `#/admin` — see below.
+
+### Finding it again
+
+Once you are signed in, a **Booking inbox** link appears in the site footer
+under "Explore". It is rendered only for signed-in staff, so the public never
+sees it, and it disappears again when you sign out.
+
+Before that first sign-in you have to type `/#/admin` yourself. That is
+deliberate: a permanent public link would tell every visitor and every search
+engine crawler exactly where your admin door is, for no benefit to them.
+
+To be clear about what that link is and is not: hiding it is **convenience, not
+security**. Someone could force the link to appear by editing their browser's
+devtools, and it would gain them nothing — the inbox loads its data through row
+level security, so without a row in `public.staff` they get an empty page.
 
 ---
 

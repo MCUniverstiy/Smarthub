@@ -30,6 +30,7 @@ import { useLang } from "@/lib/i18n/lang-context";
 import { Phone, Mail, MessageCircle, MapPin, ShieldCheck, CalendarDays } from "lucide-react";
 import { RouterLink, Route } from "@/lib/router";
 import { companyFacts } from "@/lib/site-data";
+import { useIsStaff } from "@/hooks/use-staff";
 
 /**
  * Footer — the bottom-of-page footer component.
@@ -44,6 +45,14 @@ export function Footer() {
   const { t } = useLang();
 
   /**
+   * True only when a signed-in member of the team is browsing. Used to
+   * reveal the booking-inbox shortcut below. This is presentation only:
+   * the inbox itself is protected by row level security, so forcing this
+   * value true in devtools reveals a link and nothing else.
+   */
+  const isStaff = useIsStaff();
+
+  /**
    * "Explore" links — the 7 main site pages (including room booking). Each item pairs a `Route`
    * (used by RouterLink for navigation) with a translated `label`.
    * Declared inside the component so labels re-render on language change.
@@ -56,6 +65,11 @@ export function Footer() {
     { to: "book", label: t.booking.navLabel },
     { to: "insights", label: t.footer.links.insights },
     { to: "contact", label: t.footer.links.contact },
+    // Staff-only shortcut. Absent for every public visitor, and absent
+    // entirely when the site runs without a database.
+    ...(isStaff
+      ? [{ to: "admin" as Route, label: t.footer.links.inbox }]
+      : []),
   ];
 
   /**

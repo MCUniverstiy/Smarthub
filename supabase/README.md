@@ -196,10 +196,16 @@ Bookings are grouped by date and colour-coded by status, with one-click
 slot immediately — the exclusion constraint only counts pending and confirmed
 bookings, so that time becomes bookable again straight away.
 
-The page is not linked from the navbar, the footer or the sitemap. That is
-convenience, not security: what actually protects the data is row level
-security. A stranger who guesses the URL, signs up and signs in still gets an
-**empty list**, because every policy on `bookings` calls `is_staff()`.
+Once signed in, a **Booking inbox** link appears in the site footer so nobody
+has to remember the URL. It renders only for signed-in staff and vanishes on
+sign out, so the public never sees it — before your first sign-in you type
+`/#/admin` yourself.
+
+That hiding is convenience, not security. What actually protects the data is
+row level security: a stranger who guesses the URL, signs up and signs in still
+gets an **empty list**, because every policy on `bookings` calls `is_staff()`.
+Forcing the footer link to appear in devtools achieves nothing for the same
+reason.
 
 To create a staff login: Supabase → Authentication → Users → Add user, then run
 the `insert into public.staff` snippet above with that email.
