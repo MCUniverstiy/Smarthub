@@ -10,7 +10,7 @@
  * WHAT IT DOES:
  *   - Renders a thin "top bar" (desktop only) with phone, WhatsApp, email and
  *     the TCSP licence badge.
- *   - Renders the main sticky header containing: logo, 6 nav links (desktop),
+ *   - Renders the main sticky header containing: logo, 7 nav links (desktop),
  *     the language switcher, a "Get Started" CTA button, and a hamburger
  *     button that opens a slide-in Sheet drawer (mobile only).
  *   - Listens to the page scroll position and toggles a "glass" background
@@ -72,7 +72,8 @@ export function Navbar() {
   }, []);
 
   /**
-   * Build the array of 6 primary nav links.
+   * Build the array of 7 primary nav links (including "Book a Room",
+   * which is the site's main self-service conversion path).
    * Each item has a `to` (a Route union value used by our router) and a
    * `label` (the translated string shown to the user).
    * Declared inside the component so the labels re-translate when the user
@@ -83,6 +84,7 @@ export function Navbar() {
     { to: "services", label: t.nav.services },
     { to: "why-hk", label: t.nav.whyhk },
     { to: "pricing", label: t.nav.pricing },
+    { to: "book", label: t.booking.navLabel },
     { to: "insights", label: t.nav.insights },
     { to: "contact", label: t.nav.contact },
   ];
@@ -189,13 +191,24 @@ export function Navbar() {
                 its styles into the child RouterLink so we get a clickable
                 link that looks like a button. Hidden on the smallest screens
                 (sm:inline-flex) because the mobile menu has its own CTA. */}
+            {/* Primary CTA — "Book a Room". Room booking is the site's main
+                self-service action, so it gets the solid gradient button
+                while the softer "Get Started" enquiry link sits beside it. */}
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="hidden border-teal-200 text-teal-700 hover:bg-teal-50 lg:inline-flex"
+            >
+              <RouterLink to="contact">{t.nav.cta}</RouterLink>
+            </Button>
             <Button
               asChild
               size="sm"
               className="hidden bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/25 hover:from-teal-600 hover:to-teal-700 sm:inline-flex"
             >
-              <RouterLink to="contact">
-                {t.nav.cta}
+              <RouterLink to="book">
+                {t.booking.ctaShort}
                 <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </RouterLink>
             </Button>
@@ -265,15 +278,27 @@ export function Navbar() {
                   </a>
                 </div>
                 {/* Full-width CTA button at the bottom of the drawer. */}
-                <Button
-                  asChild
-                  className="mt-4 w-full bg-gradient-to-r from-teal-500 to-teal-600 text-white"
-                >
-                  <RouterLink to="contact">
-                    {t.nav.cta}
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </RouterLink>
-                </Button>
+                {/* Drawer CTAs: book a room (primary) + general enquiry. */}
+                <SheetClose asChild>
+                  <Button
+                    asChild
+                    className="mt-4 w-full bg-gradient-to-r from-teal-500 to-teal-600 text-white"
+                  >
+                    <RouterLink to="book">
+                      {t.booking.ctaShort}
+                      <ArrowRight className="ml-1 h-4 w-4" />
+                    </RouterLink>
+                  </Button>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="mt-2 w-full border-teal-200 text-teal-700"
+                  >
+                    <RouterLink to="contact">{t.nav.cta}</RouterLink>
+                  </Button>
+                </SheetClose>
               </SheetContent>
             </Sheet>
           </div>

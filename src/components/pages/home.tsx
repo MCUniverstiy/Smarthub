@@ -25,9 +25,10 @@
  *                    trust badges, bottom stats strip
  *   2. INTRO BAND — short company intro with a 4-tile stats grid
  *   3. SERVICES PREVIEW — 4 service cards linking to /services
- *   4. WHY HK PREVIEW — dark band teasing the Why-Hong-Kong page
- *   5. INSIGHTS PREVIEW — 3 article cards linking to /insights
- *   6. CTA BAND   — final call-to-action band (reusable <CTABand />)
+ *   4. BOOKING BAND — room booking promo with 3 quick-pick room tiles
+ *   5. WHY HK PREVIEW — dark band teasing the Why-Hong-Kong page
+ *   6. INSIGHTS PREVIEW — 3 article cards linking to /insights
+ *   7. CTA BAND   — final call-to-action band (reusable <CTABand />)
  * =====================================================================
  */
 
@@ -36,8 +37,9 @@ import { pageContent } from "@/lib/i18n/page-content";
 import { RouterLink } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { CTABand } from "@/components/blocks/cta-band";
-import { ArrowRight, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import { heroStats } from "@/lib/site-data";
+import { ROOMS, formatHKD } from "@/lib/booking-data";
 import Image from "next/image";
 
 // Four stock photos (one per service card) used in the SERVICES PREVIEW grid.
@@ -145,13 +147,20 @@ export function HomePage() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </RouterLink>
               </Button>
+              {/* Secondary hero CTA — sends visitors straight to the room
+                  booking funnel (#/book) rather than the generic contact
+                  form, since booking a space is the fastest way to see the
+                  office and the site's main self-service action. */}
               <Button
                 asChild
                 size="lg"
                 variant="outline"
                 className="border-white/30 bg-white/5 text-white backdrop-blur hover:bg-white/15"
               >
-                <RouterLink to="contact">{p.heroCta2}</RouterLink>
+                <RouterLink to="book">
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {t.booking.ctaShort}
+                </RouterLink>
               </Button>
             </div>
 
@@ -316,6 +325,77 @@ export function HomePage() {
                 </div>
               </RouterLink>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== ROOM BOOKING BAND ===== */}
+      {/* A dedicated strip promoting the self-service room booking funnel.
+          The three room chips deep-link straight to #/book?room=<id>, so a
+          visitor can go from the homepage to a preselected booking form in
+          one click. Room data comes from booking-data.ts, the same source
+          the booking page and the Google Form bridge use. */}
+      <section className="border-y border-slate-100 bg-gradient-to-br from-teal-50 via-white to-emerald-50/40 py-16 lg:py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
+            <div className="lg:col-span-6">
+              <span className="inline-flex items-center gap-2 rounded-full bg-teal-100/70 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-teal-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+                {t.booking.homeEyebrow}
+              </span>
+              <h2 className="mt-5 font-display text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">
+                {t.booking.homeTitle}
+              </h2>
+              <p className="mt-4 text-base leading-relaxed text-slate-600">
+                {t.booking.homeLead}
+              </p>
+              <div className="mt-7">
+                <Button
+                  asChild
+                  size="lg"
+                  className="btn-shimmer bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/25 hover:from-teal-600 hover:to-teal-700"
+                >
+                  <RouterLink to="book">
+                    {t.booking.homeCta}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </RouterLink>
+                </Button>
+              </div>
+            </div>
+
+            {/* Quick-pick tiles for the three most-requested spaces. */}
+            <div className="lg:col-span-6">
+              <div className="grid gap-3 sm:grid-cols-3">
+                {ROOMS.filter((r) =>
+                  ["meeting-a", "hot-desk", "event-space"].includes(r.id)
+                ).map((room) => (
+                  <RouterLink
+                    key={room.id}
+                    to="book"
+                    query={{ room: room.id }}
+                    className="lift-card group flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                  >
+                    <span className="text-2xl" aria-hidden="true">
+                      {room.emoji}
+                    </span>
+                    <span className="mt-3 font-display text-sm font-bold text-slate-900">
+                      {room.name[lang]}
+                    </span>
+                    <span className="mt-1 text-xs text-slate-500">
+                      {room.capacity} pax
+                    </span>
+                    <span className="mt-3 text-sm font-bold text-teal-700">
+                      {formatHKD(room.rate)}
+                      {room.unit === "hour" ? t.booking.perHour : t.booking.perDay}
+                    </span>
+                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-teal-700">
+                      {t.booking.bookCta}
+                      <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </RouterLink>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>

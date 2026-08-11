@@ -46,12 +46,13 @@ import {
   MessageCircle,
   Clock,
   Send,
+  CalendarDays,
   CheckCircle2,
   AlertCircle,
   Navigation,
 } from "lucide-react";
 import { companyFacts } from "@/lib/site-data";
-import { RouterLink } from "@/lib/router";
+import { RouterLink, hashQuery } from "@/lib/router";
 
 /**
  * ContactPage — top-level page component for the /contact route.
@@ -63,7 +64,8 @@ import { RouterLink } from "@/lib/router";
  *   - `status`: "idle" | "sending" | "success" | "error" — drives the submit
  *     button's label and disabled state, plus the error banner.
  *   - `preselectedService`: optional string parsed from the URL query string
- *     on first render. Used as the `defaultValue` of the service <Select>.
+ *     on first render (via the router's `hashQuery()` helper, which already
+ *     decodes the values). Used as the `defaultValue` of the service <Select>.
  *
  * Hooks: useLang() → { t, lang }.
  */
@@ -75,16 +77,11 @@ export function ContactPage() {
   // Lazy-initialize the preselected service from the URL hash query string.
   // e.g. URL #/contact?service=Company%20Incorporation → preselectedService
   //   = "Company Incorporation". The `typeof window === "undefined"` check
-  //   is a server-side-rendering guard (Next.js runs components on the server
-  //   first, where `window` doesn't exist).
-  const [preselectedService, setPreselectedService] = useState<string | undefined>(() => {
-    if (typeof window === "undefined") return undefined;
-    const hash = window.location.hash;
-    const qIndex = hash.indexOf("?");
-    if (qIndex === -1) return undefined;
-    const params = new URLSearchParams(hash.slice(qIndex + 1));
-    const svc = params.get("service");
-    return svc ? decodeURIComponent(svc) : undefined;
+  //   `hashQuery()` handles the server-side-rendering guard and returns an
+  //   empty params object when there's no query string.
+  const [preselectedService] = useState<string | undefined>(() => {
+    const svc = hashQuery().get("service");
+    return svc ?? undefined;
   });
 
   /**
@@ -224,6 +221,32 @@ export function ContactPage() {
 
             {/* Right: Form column — the contact form itself. */}
             <div className="lg:col-span-3">
+              {/* Deflection banner: room hire is self-service, so point
+                  those visitors at the booking funnel before they type out
+                  a free-text enquiry the team would have to reply to. */}
+              <div className="mb-6 flex flex-col items-start justify-between gap-3 rounded-2xl border border-teal-200 bg-teal-50/60 p-5 sm:flex-row sm:items-center">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-teal-600 ring-1 ring-teal-100">
+                    <CalendarDays className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="font-display text-sm font-bold text-slate-900">
+                      {t.booking.homeTitle}
+                    </div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
+                      {t.booking.homeLead}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  asChild
+                  size="sm"
+                  className="shrink-0 bg-gradient-to-r from-teal-500 to-teal-600 text-white"
+                >
+                  <RouterLink to="book">{t.booking.ctaShort}</RouterLink>
+                </Button>
+              </div>
+
               {/* The <form> element wires its submit event to `onSubmit`.
                   `noValidate={false}` lets the browser run its built-in
                   validation (required, type=email, etc.). */}

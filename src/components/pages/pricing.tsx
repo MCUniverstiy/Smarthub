@@ -14,8 +14,9 @@
  *   star badge). Each tier card has a price, description, CTA button that
  *   deep-links to the contact form with the matching service preselected, and
  *   a feature checklist. Below: a workspace add-ons grid (3 columns of
- *   name+price+desc tiles) and a FAQ accordion built on Radix UI. Closes with
- *   a CTABand.
+ *   name+price+desc tiles), the bookable-room rate table (<RoomRates />,
+ *   whose rows deep-link into the booking page) and a FAQ accordion built on
+ *   Radix UI. Closes with a CTABand.
  *
  * HOW IT FITS IN
  *   - Exported as `PricingPage`, rendered by RouterOutlet when route === "pricing".
@@ -30,6 +31,7 @@ import { pageContent } from "@/lib/i18n/page-content";
 import { PageHero } from "@/components/blocks/page-hero";
 import { SectionHeading } from "@/components/blocks/section-heading";
 import { CTABand } from "@/components/blocks/cta-band";
+import { RoomRates } from "@/components/blocks/room-rates";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -163,8 +165,10 @@ export function PricingPage() {
             })}
           </div>
 
-          {/* Workspace add-ons — a bordered card containing a 3-column grid of
-              smaller add-on tiles. Each tile shows a name, price pill, and description. */}
+          {/* Monthly workspace add-ons — a bordered card containing a 3-column
+              grid of smaller add-on tiles (name, price pill, description).
+              These are the MONTHLY memberships; the by-the-hour room rates
+              live in the <RoomRates /> block below. */}
           <div className="mt-14 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-teal-50/40 px-6 py-5">
               <h3 className="font-display text-xl font-bold text-slate-900">
@@ -184,6 +188,14 @@ export function PricingPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Bookable rooms — the live rate card. Every row deep-links to
+              #/book?room=<id>, so a visitor comparing prices is one click
+              away from requesting that exact room. Data comes from
+              booking-data.ts (the same source the booking form uses). */}
+          <div className="mt-8">
+            <RoomRates />
           </div>
 
           <p className="mt-6 text-center text-xs text-slate-400">{t.pricing.disclaimer}</p>

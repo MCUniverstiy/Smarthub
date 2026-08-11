@@ -47,6 +47,7 @@ import { ServicesPage } from "@/components/pages/services";
 import { WhyHKPage } from "@/components/pages/why-hk";
 import { PricingPage } from "@/components/pages/pricing";
 import { InsightsPage } from "@/components/pages/insights";
+import { BookingPage } from "@/components/pages/booking";
 import { ContactPage } from "@/components/pages/contact";
 import { LegalPage } from "@/components/pages/legal";
 import { NotFoundPage } from "@/components/pages/not-found";
@@ -83,6 +84,8 @@ function RouterOutlet() {
       return <PricingPage />;
     case "insights":
       return <InsightsPage />;
+    case "book":
+      return <BookingPage />;
     case "contact":
       return <ContactPage />;
     // The four legal routes all share the LegalPage component, passing
