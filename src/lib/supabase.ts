@@ -554,3 +554,96 @@ export async function updateEnquiryStatus(
   if (error) return { ok: false, message: error.message };
   return { ok: true };
 }
+
+// ============================================================================
+// DELETING (staff only)
+// ============================================================================
+// Both go through RPCs rather than a plain .delete(), because the SQL side
+// deliberately grants no DELETE on the tables. The function archives the row
+// into `deleted_records` first, so a mistaken delete can be undone. See
+// supabase/deletes.sql.
+//
+// Cancel is still the right tool for "this booking is not happening" — it
+// frees the slot and keeps the history. Delete is for rows that should never
+// have existed: tests, spam, duplicates.
+
+export type DeleteResult =
+  | { ok: true; deleted: boolean }
+  | { ok: false; message: string };
+
+async function callDelete(
+  fn: "delete_booking" | "delete_enquiry",
+  reference: string,
+  reason?: string
+): Promise<DeleteResult> {
+  if (!supabase) return { ok: false, message: "Supabase is not configured." };
+  try {
+    const { data, error } = await supabase.rpc(fn, {
+      p_reference: reference,
+      p_reason: reason ?? null,
+    });
+    if (error) {
+      // The SQL raises insufficient_privilege for non-staff. Translate it
+      // rather than showing the raw Postgres wording.
+      const denied = /only staff|insufficient/i.test(error.message);
+      return {
+        ok: false,
+        message: denied
+          ? "Only staff can delete records."
+          : error.message,
+      };
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    return { ok: true, deleted: Boolean(row?.deleted) };
+  } catch (e) {
+    return {
+      ok: false,
+      message: e instanceof Error ? e.message : "Network error",
+    };
+  }
+}
+
+/** Delete a booking. Archived first; recoverable via `restore_deleted`. */
+export async function deleteBooking(
+  reference: string,
+  reason?: string
+): Promise<DeleteResult> {
+  return callDelete("delete_booking", reference, reason);
+}
+
+/** Delete an enquiry. Archived first; recoverable via `restore_deleted`. */
+export async function deleteEnquiry(
+  reference: string,
+  reason?: string
+): Promise<DeleteResult> {
+  return callDelete("delete_enquiry", reference, reason);
+}
+
+/**
+ * Put a deleted booking or enquiry back.
+ *
+ * Restoring a booking can fail if someone else has taken the slot in the
+ * meantime — that is correct, and the message says so.
+ */
+export async function restoreDeleted(
+  reference: string
+): Promise<{ ok: boolean; message?: string }> {
+  if (!supabase) return { ok: false, message: "Supabase is not configured." };
+  try {
+    const { error } = await supabase.rpc("restore_deleted", {
+      p_reference: reference,
+    });
+    if (error) {
+      const clash = /23P01|no_overlap|exclusion/i.test(error.message);
+      return {
+        ok: false,
+        message: clash
+          ? "That slot has since been booked by someone else, so this cannot be restored."
+          : error.message,
+      };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Network error" };
+  }
+}

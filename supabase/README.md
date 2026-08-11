@@ -248,6 +248,35 @@ small badge on the enquiry card.
 Rate limit: 5 unanswered enquiries per email address per 24 hours. Answering
 one clears the count, since only `new` enquiries are counted.
 
+### Deleting a booking or an enquiry
+
+Run [`deletes.sql`](deletes.sql) to enable the delete buttons in `#/admin`.
+Without it, the buttons will report a permission error — that is deliberate:
+the tables grant no `DELETE` at all, so nothing can be removed except through
+these functions, which archive the row first.
+
+**Cancel, do not delete, most of the time.** Cancelling a booking already
+frees the room for someone else and keeps the history. Delete is for rows
+that should never have existed: test bookings, spam, duplicates.
+
+Every delete copies the whole row into `public.deleted_records` before
+removing it, so the archive is what makes the **Undo** link in the admin
+notice real. To recover something later:
+
+```sql
+-- What has been deleted recently, and by whom
+select deleted_at, kind, reference, deleted_email, reason
+from public.deleted_records
+order by deleted_at desc
+limit 20;
+
+-- Put one back
+select * from public.restore_deleted('SH-2608-ABC123');
+```
+
+Restoring a booking can fail if someone else has since taken that slot.
+That is correct, not a bug — the admin page says so plainly when it happens.
+
 ### Getting told when one arrives
 
 Storing an enquiry is not the same as noticing it. Bookings are covered — the

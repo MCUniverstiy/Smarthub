@@ -156,7 +156,9 @@ Right now your site lives at `smarthub-connect-abc123.vercel.app`. To make it li
 1. Supabase dashboard → **SQL Editor** → **New query**
 2. Paste all of `supabase/schema.sql` → **Run** (this is the room booking system)
 3. New query → paste all of `supabase/enquiries.sql` → **Run** (this is the contact form)
-4. Create your staff login so you can read them — full walkthrough in
+4. New query → paste all of `supabase/deletes.sql` → **Run** (lets you delete
+   bookings and enquiries from `#/admin`, with an undo)
+5. Create your staff login so you can read them — full walkthrough in
    [`docs/staff-login.md`](docs/staff-login.md)
 
 **Test it:** Go to your live site, fill in the contact form, submit. Then open

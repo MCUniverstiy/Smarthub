@@ -39,6 +39,7 @@ import {
   Mail,
   MessageSquare,
   Phone,
+  Trash2,
   RefreshCw,
   Users,
 } from "lucide-react";
@@ -48,10 +49,13 @@ import { formatHKD } from "@/lib/booking-data";
 import {
   BOOKING_STATUSES,
   ENQUIRY_STATUSES,
+  deleteBooking,
+  deleteEnquiry,
   fetchBookings,
   fetchEnquiries,
   isStaff,
   isSupabaseConfigured,
+  restoreDeleted,
   signIn,
   signOut,
   supabase,
@@ -144,6 +148,14 @@ export function AdminPage() {
   const [filter, setFilter] = useState<BookingStatus | "all">("pending");
   const [enquiryFilter, setEnquiryFilter] = useState<EnquiryStatus | "all">("new");
   const [notice, setNotice] = useState<string>("");
+  // Which reference is showing "Sure?" right now. A second click on the
+  // same row confirms; clicking anything else cancels. This is used
+  // instead of window.confirm so the page keeps its own styling and
+  // stays testable.
+  const [confirming, setConfirming] = useState<string>("");
+  // The last thing deleted, so the notice can offer Undo. Cleared once
+  // the notice is dismissed or another action happens.
+  const [undo, setUndo] = useState<{ reference: string; kind: "booking" | "enquiry" } | null>(null);
 
   // Sign-in form
   const [email, setEmail] = useState("");
@@ -241,6 +253,51 @@ export function AdminPage() {
     );
   }
 
+  /**
+   * Delete a booking or enquiry.
+   *
+   * Not optimistic, unlike the status changes: this one is destructive,
+   * so the row stays put until the database confirms it is gone. The
+   * archive behind `delete_booking` means Undo is real, not a lie.
+   */
+  async function removeRecord(reference: string, kind: "booking" | "enquiry") {
+    setConfirming("");
+    const res =
+      kind === "booking"
+        ? await deleteBooking(reference)
+        : await deleteEnquiry(reference);
+
+    if (!res.ok) {
+      setNotice(res.message);
+      return;
+    }
+
+    if (kind === "booking") {
+      setBookings((rows) => rows.filter((r) => r.reference !== reference));
+    } else {
+      setEnquiries((rows) => rows.filter((r) => r.reference !== reference));
+    }
+    setUndo({ reference, kind });
+    setNotice(
+      kind === "booking"
+        ? `${reference} deleted — the slot is free again.`
+        : `${reference} deleted.`
+    );
+  }
+
+  /** Put the last deleted record back. */
+  async function undoDelete() {
+    if (!undo) return;
+    const res = await restoreDeleted(undo.reference);
+    if (!res.ok) {
+      setNotice(res.message ?? "Could not restore that record.");
+      return;
+    }
+    setNotice(`${undo.reference} restored.`);
+    setUndo(null);
+    await load();
+  }
+
   /** Same optimistic update, for enquiries. */
   async function setEnquiryState(reference: string, status: EnquiryStatus) {
     const previous = enquiries;
@@ -312,8 +369,10 @@ export function AdminPage() {
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">
             Run <code className="rounded bg-white px-1.5 py-0.5">supabase/schema.sql</code>{" "}
-            and{" "}
+,{" "}
             <code className="rounded bg-white px-1.5 py-0.5">supabase/enquiries.sql</code>{" "}
+            and{" "}
+            <code className="rounded bg-white px-1.5 py-0.5">supabase/deletes.sql</code>{" "}
             in the Supabase SQL editor, then set{" "}
             <code className="rounded bg-white px-1.5 py-0.5">NEXT_PUBLIC_SUPABASE_URL</code>{" "}
             and{" "}
@@ -459,8 +518,21 @@ export function AdminPage() {
         <div className="mb-5 flex items-start gap-2 rounded-2xl border border-teal-200 bg-teal-50 p-3 text-sm text-teal-800">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           <span className="flex-1">{notice}</span>
+          {/* Undo is only offered while the deleted row is still in the
+              archive — one click puts it back exactly as it was. */}
+          {undo && (
+            <button
+              onClick={() => void undoDelete()}
+              className="shrink-0 font-semibold text-teal-700 underline underline-offset-2 hover:text-teal-900"
+            >
+              Undo
+            </button>
+          )}
           <button
-            onClick={() => setNotice("")}
+            onClick={() => {
+              setNotice("");
+              setUndo(null);
+            }}
             className="text-teal-600 hover:text-teal-800"
             aria-label="Dismiss"
           >
@@ -605,6 +677,28 @@ export function AdminPage() {
                             Cancel
                           </Button>
                         )}
+                        {/* Delete is last and quiet: cancelling is almost
+                            always the right action, and it keeps the
+                            history. Two clicks required. */}
+                        {confirming === b.reference ? (
+                          <Button
+                            size="sm"
+                            onClick={() => void removeRecord(b.reference, "booking")}
+                            className="bg-rose-600 text-white hover:bg-rose-700"
+                          >
+                            Delete for good?
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setConfirming(b.reference)}
+                            className="text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                            aria-label={`Delete booking ${b.reference}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
 
@@ -743,6 +837,25 @@ export function AdminPage() {
                       onClick={() => void setEnquiryState(e.reference, "spam")}
                     >
                       Spam
+                    </Button>
+                  )}
+                  {confirming === e.reference ? (
+                    <Button
+                      size="sm"
+                      onClick={() => void removeRecord(e.reference, "enquiry")}
+                      className="bg-rose-600 text-white hover:bg-rose-700"
+                    >
+                      Delete for good?
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setConfirming(e.reference)}
+                      className="text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                      aria-label={`Delete enquiry ${e.reference}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>

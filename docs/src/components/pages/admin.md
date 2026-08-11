@@ -57,6 +57,16 @@ Enquiries come from `enquiries_inbox` and move through `new` → `in-progress` �
 
 Each card shows a language badge (繁體 / 简体) when the visitor was not reading the English site, so the reply goes out in the right language.
 
+### Deleting is the one thing that is not optimistic
+
+Status changes apply instantly and roll back if the database refuses, because the office clicks them constantly and waiting feels broken. Delete does the opposite: the row stays on screen until the database confirms it is gone. Guessing right about a destructive action is not worth the millisecond.
+
+It takes two clicks — the bin icon turns into **Delete for good?** — rather than a `window.confirm`, so the page keeps its own styling and stays testable. Clicking a different row's bin moves the confirmation there.
+
+The **Undo** link in the success notice is real, not cosmetic. `supabase/deletes.sql` grants no `DELETE` on the tables at all; the only route is through `delete_booking` / `delete_enquiry`, which copy the full row into `deleted_records` first. Undo calls `restore_deleted`, which rebuilds the row — naming every column explicitly, because `bookings.during` is a generated column and a naive `insert ... select *` fails on it.
+
+Restoring a booking can fail if someone else booked the slot in the meantime. That surfaces as a plain-English message rather than a Postgres `23P01`.
+
 ### Optimistic status updates
 
 Clicking Confirm updates the row on screen immediately, then calls the
