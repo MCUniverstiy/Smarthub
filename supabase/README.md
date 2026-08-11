@@ -37,13 +37,20 @@ gets `23P01`.
 
 1. Supabase dashboard → **SQL Editor** → **New query**.
 2. Paste all of `schema.sql`, press **Run**. It takes a second or two.
-3. Make yourself staff so you can see the bookings (sign up in the app first,
-   or invite yourself under Authentication → Users):
+3. Make yourself staff so you can see the bookings. Create the login first
+   under **Authentication → Users → Add user**, then run this. Full
+   walkthrough in [`docs/staff-login.md`](../docs/staff-login.md).
 
    ```sql
    insert into public.staff (user_id, email)
-   select id, email from auth.users where email = 'you@smarthubc.com';
+   select id, email from auth.users where email = 'you@smarthubc.com'
+   on conflict (user_id) do nothing
+   returning user_id, email;
    ```
+
+   **Check the result says `1 row`.** If it says `Success. No rows returned`,
+   the email did not match any account — nothing was added and no error was
+   raised. See the troubleshooting table in `docs/staff-login.md`.
 
 4. Check it worked:
 

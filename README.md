@@ -36,7 +36,7 @@ These items require the boss's input or external service setup. None of them can
 | **Real room photos** | `src/lib/booking-data.ts` → `ROOMS[].image` | Unsplash stock photos |
 | **Run the booking database** | Paste `supabase/schema.sql` into the Supabase SQL editor | Not run yet — without it the site still works, but the Google Form cannot prevent double bookings |
 | **Supabase env vars** | `.env.local` + Vercel → `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Unset (booking falls back to Google Form only) |
-| **Create a staff login** | Supabase → Authentication → Users, then `insert into public.staff` | None yet — `#/admin` shows "no access" until one exists |
+| **Create a staff login** | Supabase → Authentication → Users, then `insert into public.staff` — step-by-step in [`docs/staff-login.md`](docs/staff-login.md) | None yet — `#/admin` shows "no access" until one exists |
 | **Real Formspree ID** | `src/components/pages/contact.tsx` line 56 | `your-form-id` |
 | **Real newsletter provider** | `src/components/pages/insights.tsx` → `onSubscribe` | Just flips button label |
 | **Real images** | All `images.unsplash.com` URLs across `src/components/pages/*` | Stock photos |
@@ -231,6 +231,9 @@ The page is not in the navbar, footer or sitemap — but that is convenience, no
 security. Row level security is what protects the data: a stranger who guesses
 the URL and signs up still sees an empty list, because every policy calls
 `is_staff()`.
+
+Creating the first staff login is a two-step job (make the account, then grant
+the staff pass). Walkthrough: [`docs/staff-login.md`](docs/staff-login.md).
 
 ### What the website adds on top of the raw form
 
