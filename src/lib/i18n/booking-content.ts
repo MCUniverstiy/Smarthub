@@ -136,6 +136,29 @@ export const bookingContent = {
       attendeesOverCapacity:
         "{room} holds up to {n} people. Please reduce the headcount or pick a larger space.",
       payment: "Select a payment method.",
+
+      // --- Refusals that come back from the database ---
+      // The booking database can reject a request the browser thought
+      // was fine, because it knows what everyone else has booked.
+      slotTaken:
+        "Sorry — that room has just been booked for the time you chose. Please pick another time or room.",
+      seatsSoldOut:
+        "The hot desk area is fully booked for that day. Please choose another date.",
+      rateLimit:
+        "You already have several requests waiting. Please give us a moment to reply before sending more.",
+      submitFailed:
+        "We could not send your request just now. Please try the Google Form link below, or call us on +852 5501 3516.",
+    },
+
+    // --- Live availability hints ---
+    availability: {
+      checking: "Checking availability…",
+      taken: "Already booked",
+      freeSlot: "Available",
+      busyOn: "Already booked on this date:",
+      allFree: "No bookings yet for this date — every time slot is free.",
+      seatsLeft: "{n} of {total} hot desk seats left for this date.",
+      referenceLabel: "Booking reference",
     },
 
     // --- Success screen ---
@@ -306,6 +329,22 @@ export const bookingContent = {
       attendees: "請填寫參加人數。",
       attendeesOverCapacity: "{room} 最多容納 {n} 人。請減少人數或選擇較大空間。",
       payment: "請選擇付款方式。",
+
+      slotTaken: "抱歉——該房間於您所選時段剛被預訂。請選擇其他時間或房間。",
+      seatsSoldOut: "共享工位當日已滿。請選擇其他日期。",
+      rateLimit: "您已有多個申請待處理。請稍候回覆後再提交。",
+      submitFailed:
+        "暫時無法送出申請。請使用下方 Google 表單連結，或致電 +852 5501 3516。",
+    },
+
+    availability: {
+      checking: "正在查詢空檔…",
+      taken: "已被預訂",
+      freeSlot: "可預訂",
+      busyOn: "此日期已預訂時段：",
+      allFree: "此日期尚未有預訂——所有時段可選。",
+      seatsLeft: "此日期共享工位尚餘 {n} / {total} 個座位。",
+      referenceLabel: "預訂編號",
     },
 
     successTitle: "已收到預訂申請",
@@ -471,6 +510,22 @@ export const bookingContent = {
       attendees: "请填写参会人数。",
       attendeesOverCapacity: "{room} 最多容纳 {n} 人。请减少人数或选择更大空间。",
       payment: "请选择付款方式。",
+
+      slotTaken: "抱歉——该房间在您所选时段刚被预订。请选择其他时间或房间。",
+      seatsSoldOut: "共享工位当日已满。请选择其他日期。",
+      rateLimit: "您已有多个申请待处理。请稍候回复后再提交。",
+      submitFailed:
+        "暂时无法发送申请。请使用下方 Google 表单链接，或致电 +852 5501 3516。",
+    },
+
+    availability: {
+      checking: "正在查询空档…",
+      taken: "已被预订",
+      freeSlot: "可预订",
+      busyOn: "此日期已预订时段：",
+      allFree: "此日期尚未有预订——所有时段可选。",
+      seatsLeft: "此日期共享工位尚余 {n} / {total} 个座位。",
+      referenceLabel: "预订编号",
     },
 
     successTitle: "已收到预订申请",

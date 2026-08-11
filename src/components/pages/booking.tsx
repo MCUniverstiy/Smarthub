@@ -36,7 +36,7 @@
  * =====================================================================
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useLang } from "@/lib/i18n/lang-context";
 import { PageHero } from "@/components/blocks/page-hero";
@@ -65,6 +65,7 @@ import {
   CreditCard,
   ExternalLink,
   Info,
+  Loader2,
   MessageCircle,
   Users,
 } from "lucide-react";
@@ -91,6 +92,13 @@ import {
   timeOptions,
   toISODate,
 } from "@/lib/booking-data";
+import {
+  createBooking,
+  getBusySlots,
+  isSupabaseConfigured,
+  type BookingErrorCode,
+  type BusySlot,
+} from "@/lib/supabase";
 
 /**
  * FormState — the raw values held by the controlled inputs. Everything is
@@ -182,6 +190,40 @@ export function BookingPage() {
   );
   const [submitted, setSubmitted] = useState<BookingSubmission | null>(null);
   const [prefillUrl, setPrefillUrl] = useState<string>("");
+
+  /**
+   * Booking reference returned by the database (e.g. "SH-2608-4KQ9TW").
+   * Empty when the request only went to the Google Form, which has no
+   * concept of a reference number.
+   */
+  const [reference, setReference] = useState<string>("");
+
+  /**
+   * Times already taken for the chosen room + date, so the pickers can
+   * grey them out. Loaded from the database; always [] when Supabase is
+   * not configured, in which case the form behaves exactly as before.
+   */
+  /**
+   * Stored WITH the room+date it was fetched for. Keeping the key next
+   * to the data means a stale result for a previously-selected room is
+   * ignored during render rather than having to be cleared by an effect.
+   */
+  const [busyFor, setBusyFor] = useState<{ key: string; slots: BusySlot[] }>({
+    key: "",
+    slots: [],
+  });
+  /** The room+date the visitor currently has selected. */
+  const busyKey = form.roomId && form.date ? `${form.roomId}|${form.date}` : "";
+
+  /** Busy slots, but only if they belong to the current room + date. */
+  const busy = busyFor.key === busyKey ? busyFor.slots : [];
+
+  /**
+   * Derived rather than stored: we are loading precisely when a room and
+   * date are chosen but the data we hold is for a different pair. This
+   * avoids a setState inside the effect body.
+   */
+  const loadingBusy = Boolean(busyKey) && busyFor.key !== busyKey;
   // Anchor used to scroll the visitor down to the form when they pick a
   // room from the catalogue above.
   const formRef = useRef<HTMLDivElement>(null);
@@ -204,6 +246,70 @@ export function BookingPage() {
 
   const selectedRoom = getRoom(form.roomId);
   const estimate = estimateCost(selectedRoom, form.startTime, form.endTime);
+
+  /* ================= LIVE AVAILABILITY =================
+     Whenever the visitor picks a room AND a date, ask the database what
+     is already booked so we can grey those times out. This is a
+     convenience only: the database itself is what actually prevents a
+     clash, so if this lookup fails the form still works — the visitor
+     just finds out at submit time instead of while choosing. */
+  useEffect(() => {
+    // Nothing to look up until both are chosen, and nothing to look up
+    // at all when the site is running without a database.
+    if (!isSupabaseConfigured || !form.roomId || !form.date) return;
+
+    // `cancelled` guards against a slow response for a room the visitor
+    // has already navigated away from overwriting a newer result.
+    let cancelled = false;
+
+    getBusySlots(form.roomId, form.date).then((slots) => {
+      if (cancelled) return;
+      setBusyFor({ key: `${form.roomId}|${form.date}`, slots });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.roomId, form.date]);
+
+  /**
+   * seatsTaken — how many hot-desk seats are already committed for the
+   * chosen date. Only meaningful for the shared (non-exclusive) space.
+   */
+  const seatsTaken = useMemo(
+    () => busy.reduce((sum, s) => sum + s.seats, 0),
+    [busy]
+  );
+
+  /** The hot desk is the one room sold by the seat rather than whole. */
+  const isSharedRoom = selectedRoom?.unit === "day";
+
+  /**
+   * isTimeBlocked — would starting (or ending) at this slot land inside
+   * a booking that already exists?
+   *
+   * Only applies to exclusive rooms. The hot desk can take overlapping
+   * bookings until its 30 seats run out, so greying out its times would
+   * be wrong.
+   *
+   * A slot is treated as free at the exact moment another booking ends,
+   * matching the database's `[)` range bounds — so a 10:00–11:00 booking
+   * leaves 11:00 available as a start time.
+   */
+  const isTimeBlocked = useCallback(
+    (slot: string, edge: "start" | "end") => {
+      if (!busy.length || isSharedRoom) return false;
+      const m = minutesOf(slot);
+      return busy.some((s) => {
+        const from = minutesOf(s.starts);
+        const to = minutesOf(s.ends);
+        // For a start time, [from, to) is unusable.
+        // For an end time, (from, to] is unusable.
+        return edge === "start" ? m >= from && m < to : m > from && m <= to;
+      });
+    },
+    [busy, isSharedRoom]
+  );
 
   /**
    * Format a `YYYY-MM-DD` string the way each language writes dates.
@@ -348,10 +454,48 @@ export function BookingPage() {
 
     setStatus("sending");
     setPrefillUrl(buildPrefillUrl(payload));
-    const ok = await submitToGoogleForm(payload);
-    setSubmitted(payload);
 
-    if (ok) {
+    /* ---- 1. The database has the final say -------------------------
+       It is the only party that knows what everyone else has booked, so
+       it goes first. If it refuses (the slot was taken while the visitor
+       was filling in the form) we stop here and say so, WITHOUT writing
+       to the Google Form — otherwise the sheet would collect a booking
+       the office can never honour. */
+    let dbReference = "";
+
+    if (isSupabaseConfigured) {
+      const result = await createBooking(payload);
+
+      if (!result.ok && result.code !== "unconfigured" && result.code !== "network") {
+        // A real, considered refusal from the database.
+        setErrors({ [errorFieldFor(result.code)]: messageFor(result.code) });
+        setStatus("idle");
+        // Re-check availability so the greyed-out slots reflect whatever
+        // just changed underneath the visitor.
+        getBusySlots(payload.roomId, payload.date).then((slots) =>
+          setBusyFor({ key: `${payload.roomId}|${payload.date}`, slots })
+        );
+        formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+
+      if (result.ok) dbReference = result.reference;
+      // On "network"/"unconfigured" we deliberately fall through to the
+      // Google Form: a booking in the sheet is far better than a lost
+      // enquiry because the database was briefly unreachable.
+    }
+
+    /* ---- 2. Mirror into the Google Form ----------------------------
+       The team's existing sheet, notifications and workflow all hang off
+       this form, so every accepted booking still lands there. */
+    const ok = await submitToGoogleForm(payload);
+
+    setSubmitted(payload);
+    setReference(dbReference);
+
+    // A booking recorded in the database is a success even if the
+    // Google Form POST was blocked — the request is safely stored.
+    if (ok || dbReference) {
       setStatus("success");
       setForm(EMPTY_FORM);
       setErrors({});
@@ -361,6 +505,58 @@ export function BookingPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  /**
+   * messageFor — the translated sentence for a database refusal.
+   * Mirrors section 11 of `supabase/schema.sql`.
+   */
+  function messageFor(code: BookingErrorCode): string {
+    const err = b.errors;
+    switch (code) {
+      case "slot-taken":
+        return err.slotTaken;
+      case "seats-sold-out":
+        return err.seatsSoldOut;
+      case "rate-limit":
+        return err.rateLimit;
+      case "capacity":
+        return selectedRoom
+          ? fill(err.attendeesOverCapacity, {
+              room: selectedRoom.name[lang],
+              n: selectedRoom.capacity,
+            })
+          : err.attendees;
+      case "lead-time":
+        return fill(err.dateTooSoon, { date: formatDate(minDateISO) });
+      case "time-order":
+        return err.endBeforeStart;
+      case "start-window":
+        return err.startTime;
+      case "end-window":
+        return err.endTime;
+      default:
+        return err.submitFailed;
+    }
+  }
+
+  /** Which field to attach a database refusal to, so it appears in context. */
+  function errorFieldFor(code: BookingErrorCode): FieldKey {
+    switch (code) {
+      case "capacity":
+      case "seats-sold-out":
+        return "attendees";
+      case "lead-time":
+        return "date";
+      case "start-window":
+        return "startTime";
+      case "slot-taken":
+      case "time-order":
+      case "end-window":
+        return "endTime";
+      default:
+        return "date";
+    }
+  }
+
   /** Reset everything back to a blank form (the success screen's CTA). */
   function reset() {
     setForm(EMPTY_FORM);
@@ -368,6 +564,8 @@ export function BookingPage() {
     setSubmitted(null);
     setStatus("idle");
     setPrefillUrl("");
+    setReference("");
+    setBusyFor({ key: "", slots: [] });
   }
 
   // Errors, flattened for the summary banner above the submit button.
@@ -410,6 +608,14 @@ export function BookingPage() {
                 </h3>
               </div>
               <dl className="divide-y divide-slate-100 text-sm">
+                {/* Only the database issues a reference number, so this
+                    row appears when the booking was stored there. */}
+                {reference && (
+                  <SummaryRow
+                    label={b.availability.referenceLabel}
+                    value={reference}
+                  />
+                )}
                 <SummaryRow label={b.summaryRoom} value={room ? room.name[lang] : "—"} />
                 <SummaryRow label={b.summaryDate} value={formatDate(submitted.date)} />
                 <SummaryRow
@@ -690,6 +896,50 @@ export function BookingPage() {
                 </div>
 
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  {/* LIVE AVAILABILITY — only rendered once a room and a
+                      date are chosen, and only when a database is wired
+                      up. Turns "submit and hope" into "see what's free". */}
+                  {isSupabaseConfigured && form.roomId && form.date && (
+                    <div className="sm:col-span-2">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+                        {loadingBusy ? (
+                          <p className="flex items-center gap-2 text-sm text-slate-500">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            {b.availability.checking}
+                          </p>
+                        ) : isSharedRoom && selectedRoom ? (
+                          <p className="text-sm text-slate-600">
+                            {fill(b.availability.seatsLeft, {
+                              n: Math.max(0, selectedRoom.capacity - seatsTaken),
+                              total: selectedRoom.capacity,
+                            })}
+                          </p>
+                        ) : busy.length === 0 ? (
+                          <p className="flex items-center gap-2 text-sm text-teal-700">
+                            <CheckCircle2 className="h-4 w-4" />
+                            {b.availability.allFree}
+                          </p>
+                        ) : (
+                          <div className="text-sm text-slate-600">
+                            <p className="font-medium text-slate-700">
+                              {b.availability.busyOn}
+                            </p>
+                            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                              {busy.map((s, i) => (
+                                <li
+                                  key={`${s.starts}-${i}`}
+                                  className="rounded-full bg-slate-200/80 px-2.5 py-1 text-xs font-medium text-slate-600"
+                                >
+                                  {formatTime12(s.starts)} – {formatTime12(s.ends)}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <Field
                     label={b.form.startTime}
                     htmlFor="startTime"
@@ -705,11 +955,21 @@ export function BookingPage() {
                         <SelectValue placeholder={b.form.chooseTime} />
                       </SelectTrigger>
                       <SelectContent>
-                        {startOptions.map((slot) => (
-                          <SelectItem key={slot} value={slot}>
-                            {formatTime12(slot)}
-                          </SelectItem>
-                        ))}
+                        {startOptions.map((slot) => {
+                          // Greyed out when the database says the room is
+                          // already taken at this time.
+                          const blocked = isTimeBlocked(slot, "start");
+                          return (
+                            <SelectItem key={slot} value={slot} disabled={blocked}>
+                              {formatTime12(slot)}
+                              {blocked && (
+                                <span className="ml-2 text-xs text-slate-400">
+                                  {b.availability.taken}
+                                </span>
+                              )}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </Field>
@@ -730,13 +990,20 @@ export function BookingPage() {
                             key={slot}
                             value={slot}
                             // Slots at or before the chosen start time are
-                            // disabled so an invalid window can't be picked.
+                            // disabled so an invalid window can't be picked,
+                            // as are times that run into an existing booking.
                             disabled={
-                              Boolean(form.startTime) &&
-                              minutesOf(slot) <= minutesOf(form.startTime)
+                              (Boolean(form.startTime) &&
+                                minutesOf(slot) <= minutesOf(form.startTime)) ||
+                              isTimeBlocked(slot, "end")
                             }
                           >
                             {formatTime12(slot)}
+                            {isTimeBlocked(slot, "end") && (
+                              <span className="ml-2 text-xs text-slate-400">
+                                {b.availability.taken}
+                              </span>
+                            )}
                           </SelectItem>
                         ))}
                       </SelectContent>

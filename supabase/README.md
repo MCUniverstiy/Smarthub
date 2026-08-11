@@ -7,6 +7,7 @@ This folder holds the database behind the booking form.
 | `schema.sql` | The whole backend in one script. Paste it into the Supabase SQL editor and run it. |
 | `tests/schema.test.mjs` | 54 assertions run against a real PostgreSQL 18. |
 | `tests/race.test.mjs` | Proves two simultaneous bookings for one slot cannot both succeed. |
+| `google-sheet-formatter.gs` | Apps Script that makes the existing Google Sheet readable. Optional — see below. |
 
 ---
 
@@ -140,6 +141,59 @@ node supabase/tests/race.test.mjs
 
 These run a genuine PostgreSQL 18 compiled to WebAssembly — no server, no
 Docker, no connection to your live project. Safe to run anywhere.
+
+---
+
+## The booking page sends to both
+
+`src/components/pages/booking.tsx` now does this on submit:
+
+1. **Database first.** It knows what everyone else has booked, so it decides.
+   If it refuses — the slot went while the visitor was typing — the form says
+   so and *nothing is written to the Google Form*. Otherwise the sheet would
+   collect a booking you can never honour.
+2. **Then the Google Form.** Every accepted booking still lands in the sheet,
+   so your existing notifications and workflow carry on untouched.
+
+If Supabase is not configured, step 1 is skipped entirely and the page behaves
+exactly as it did before. The same is true if the database is unreachable: a
+booking in the sheet beats a lost enquiry. So you can deploy this now and turn
+the database on later by adding the two env vars.
+
+Two things the database makes possible that the form could not:
+
+- **Taken times are greyed out** in the time pickers, with the already-booked
+  spans listed above them. For the hot desk it shows seats remaining instead,
+  because that space is sold per seat.
+- **Every booking gets a reference** like `SH-2608-4KQ9TW`, shown on the
+  confirmation screen and stored in the database.
+
+---
+
+## Making the Google Sheet readable
+
+`google-sheet-formatter.gs` is an Apps Script that formats the response sheet:
+colour-coded rooms, a Status dropdown (New / Confirmed / Awaiting payment /
+Declined / Cancelled) with colour coding, frozen header, sane column widths,
+a Summary tab, and **clashing bookings painted red**.
+
+Install:
+
+1. Open the response spreadsheet → **Extensions → Apps Script**.
+2. Replace the contents of `Code.gs` with this file, save.
+3. Choose the `beautify` function in the toolbar and press **Run**. Approve the
+   permission prompt.
+4. Reload the sheet — there is now a **SmartHub** menu.
+
+To have it run on every submission: Triggers (clock icon) → Add Trigger →
+function `onFormSubmit`, source "From spreadsheet", type "On form submit".
+
+It only adds formatting plus two columns at the far right (Status, Internal
+notes) that the form will never overwrite. Your data is not touched.
+
+The clash highlighting uses the same `[)` rule as the database, so back-to-back
+bookings are not flagged. But note what it is: the sheet finding out about a
+double booking *after* it happened. Only the database can stop one.
 
 ---
 

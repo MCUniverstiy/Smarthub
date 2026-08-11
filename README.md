@@ -34,6 +34,8 @@ These items require the boss's input or external service setup. None of them can
 | **Real pricing** | `src/lib/i18n/translations.ts` → `pricing.tiers`, `pricing.workspace` | Made-up HK market rates |
 | **Verify room rates** | `src/lib/booking-data.ts` → `ROOMS` | Copied from the live Google Form — confirm they're current, and keep the form's own "Room Information" text in sync |
 | **Real room photos** | `src/lib/booking-data.ts` → `ROOMS[].image` | Unsplash stock photos |
+| **Run the booking database** | Paste `supabase/schema.sql` into the Supabase SQL editor | Not run yet — without it the site still works, but the Google Form cannot prevent double bookings |
+| **Supabase env vars** | `.env.local` + Vercel → `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Unset (booking falls back to Google Form only) |
 | **Real Formspree ID** | `src/components/pages/contact.tsx` line 56 | `your-form-id` |
 | **Real newsletter provider** | `src/components/pages/insights.tsx` → `onSubscribe` | Just flips button label |
 | **Real images** | All `images.unsplash.com` URLs across `src/components/pages/*` | Stock photos |
@@ -202,10 +204,20 @@ Visitor picks a room + slot on smarthubc.com/#/book
         │
         ├─ validated in the browser (7 working days, 9–5 / 10–6, capacity)
         │
+        ├─ Supabase: request_booking()  ◀── decides, because it knows
+        │     │                              what everyone else booked
+        │     ├─ refused (slot taken) ─▶ error shown, NOTHING sent to the form
+        │     └─ accepted ─▶ reference SH-2608-4KQ9TW
+        │
         └─ POST entry.<id>=<value> ──▶ Google Form /formResponse
                                               │
                                               └─▶ existing Responses sheet + email alert
 ```
+
+Supabase is **optional**. If the env vars are unset, or the database is
+unreachable, the middle step is skipped and the page behaves exactly as it did
+before — a booking in the sheet beats a lost enquiry. Set it up with
+`supabase/schema.sql`; see [`supabase/README.md`](supabase/README.md).
 
 ### What the website adds on top of the raw form
 
