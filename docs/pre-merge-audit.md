@@ -134,13 +134,13 @@ dated in the past, and a 200-character name.
 
 ## ⚙️ Housekeeping
 
-- **Run `bun install`.** `@supabase/supabase-js` was added with npm because bun
-  is not available in the dev sandbox, and the generated `package-lock.json`
-  was deleted to avoid fighting `bun.lock`. The lockfile needs updating.
-- **Prisma is now dead weight.** `prisma/schema.prisma` still says
-  `provider = "sqlite"` with scaffold `User`/`Post` models, and `src/lib/db.ts`
-  is an unused client. Harmless, but it will confuse the next developer.
-  Consider removing both, plus the `db:*` scripts and the `postinstall`.
+- ~~**Run `bun install`.**~~ **Done.** `bun.lock` was out of sync with
+  `package.json` — it had no `@supabase/supabase-js` entry, which would have
+  failed the Vercel build, since Vercel installs with `--frozen-lockfile`.
+  Regenerated and verified: `bun install --frozen-lockfile` now exits 0.
+- ~~**Prisma is dead weight.**~~ **Removed.** `prisma/`, `src/lib/db.ts`, both
+  Prisma dependencies, the four `db:*` scripts, the `postinstall` hook and the
+  `DATABASE_URL` entry in `.env.example` are all gone. Nothing imported them.
 - **Room photos are Unsplash stock.** Fine for launch, worth replacing.
 
 ---

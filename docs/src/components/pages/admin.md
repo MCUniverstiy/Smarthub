@@ -47,6 +47,16 @@ decides what to *return*.
 Only when both pass does it load the inbox. Subscribing to
 `onAuthStateChange` means signing in or out updates the page without a reload.
 
+### Two inboxes, one page
+
+The page has a tab switcher: **Bookings** and **Enquiries**. They are separate lists rather than one merged feed because they are different jobs — a booking holds a room at a specific hour and is time-critical, an enquiry is a message that needs a reply. Bookings open first for that reason.
+
+Both are loaded together in one `Promise.all` when the page mounts, so switching tabs never triggers another wait. Each tab carries an amber count of the items needing attention (`pending` bookings, `new` enquiries), so neither queue rots unnoticed while the other is on screen.
+
+Enquiries come from `enquiries_inbox` and move through `new` → `in-progress` → `replied` → `closed`, plus `spam`. Marking something spam sets a status rather than deleting it, so the pattern stays visible. The **Reply** button is a `mailto:` pre-addressed with the reference in the subject line, since the office answers by email anyway.
+
+Each card shows a language badge (繁體 / 简体) when the visitor was not reading the English site, so the reply goes out in the right language.
+
 ### Optimistic status updates
 
 Clicking Confirm updates the row on screen immediately, then calls the

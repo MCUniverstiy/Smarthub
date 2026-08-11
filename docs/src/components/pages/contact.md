@@ -1,7 +1,7 @@
 # File: contact.tsx
 
 ## What This File Does
-`contact.tsx` is the **Contact page**. It exports a `ContactPage` component that renders a two-column layout (contact info on the left, a working contact form on the right) plus a Google Maps embed below. The form posts to a Formspree endpoint (placeholder for now), supports four submit states (idle/sending/success/error), includes a hidden honeypot anti-spam field, and can preselect a service in its dropdown via a `?service=...` URL query string (used by the pricing page's deep-link CTAs).
+`contact.tsx` is the **Contact page**. It exports a `ContactPage` component that renders a two-column layout (contact info on the left, a working contact form on the right) plus a Google Maps embed below. The form posts to a Formspree endpoint (placeholder for now) **and** saves the enquiry to Supabase via `submitEnquiry`, supports four submit states (idle/sending/success/error), includes a hidden honeypot anti-spam field, and can preselect a service in its dropdown via a `?service=...` URL query string (used by the pricing page's deep-link CTAs).
 
 ## Where It Lives in the Project
 - **Path:** `src/components/pages/contact.tsx`
@@ -40,7 +40,17 @@ The visitor sees, top to bottom:
 - Reads `{ t, lang }`, `p`, and sets up `status` + `preselectedService` state.
 
 ### `onSubmit` async function
-- Prevents default, builds `FormData`, checks honeypot, sets status to "sending", POSTs to Formspree, transitions to success/error. See the JSDoc comment in the file for the full flow.
+- Prevents default, builds `FormData`, checks honeypot, sets status to "sending", saves the enquiry to Supabase, POSTs to Formspree, transitions to success/error. See the JSDoc comment in the file for the full flow.
+
+### Two destinations, either one counts as success
+
+The submit handler writes to two places. Formspree is what emails the office; Supabase is what keeps the enquiry as a searchable record the team can filter and mark as replied in `#/admin`.
+
+The Supabase write is awaited **before** the Formspree POST, not after. Both are fast, so the ordering is not about speed — it is about which one survives a half-finished submit if the visitor closes the tab mid-request.
+
+The status becomes `success` if **either** path worked. That matters because the Formspree endpoint is still a placeholder: without this, a working database write would still show the visitor an error and they would send the message twice. If neither works, the error message tells them to email directly.
+
+Supabase failing is never fatal here — `submitEnquiry` returns a result object rather than throwing, and the call is additionally `.catch()`-guarded.
 
 ### `infoItems` array
 - An array of 5 contact-info objects, each with `{ icon, label, value, href? }`. Built before the JSX so the render is just a `.map`.

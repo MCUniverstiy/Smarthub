@@ -120,7 +120,6 @@ my-project/
 │       │
 │       ├── router.tsx               # Custom hash router (12 routes, scroll-to-top, RouterLink component)
 │       ├── site-data.ts             # 📍 SINGLE SOURCE OF TRUTH for company facts (phone, email, address, stats)
-│       ├── db.ts                    # Prisma client (unused, scaffold)
 │       └── utils.ts                 # cn() class merge helper
 │
 ├── scripts/

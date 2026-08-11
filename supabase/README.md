@@ -37,7 +37,10 @@ gets `23P01`.
 
 1. Supabase dashboard → **SQL Editor** → **New query**.
 2. Paste all of `schema.sql`, press **Run**. It takes a second or two.
-3. Make yourself staff so you can see the bookings. Create the login first
+3. New query again, paste all of [`enquiries.sql`](enquiries.sql), press
+   **Run**. That is the contact form. It must go second, because it reuses
+   the `staff` table and `is_staff()` function that `schema.sql` creates.
+4. Make yourself staff so you can see the bookings. Create the login first
    under **Authentication → Users → Add user**, then run this. Full
    walkthrough in [`docs/staff-login.md`](../docs/staff-login.md).
 
@@ -52,15 +55,16 @@ gets `23P01`.
    the email did not match any account — nothing was added and no error was
    raised. See the troubleshooting table in `docs/staff-login.md`.
 
-4. Check it worked:
+5. Check it worked:
 
    ```sql
    select * from public.rooms order by sort_order;
    select public.earliest_booking_date();
+   select count(*) from public.enquiries;   -- 0, but no error = table exists
    ```
 
-The script is **idempotent** — running it again is safe and will not delete
-bookings. Editing a rate in section 3 and re-running is the intended way to
+Both scripts are **idempotent** — running them again is safe and will not
+delete bookings or enquiries. Editing a rate in section 3 and re-running is the intended way to
 change prices.
 
 ---
@@ -209,6 +213,40 @@ reason.
 
 To create a staff login: Supabase → Authentication → Users → Add user, then run
 the `insert into public.staff` snippet above with that email.
+
+---
+
+## The contact form goes to the database too
+
+`enquiries.sql` adds the same treatment for the contact page. The table is
+much simpler than `bookings` because an enquiry reserves nothing — there is
+no clash checking, no capacity, no lead time. It is a message with a status.
+
+The security model is identical, and it is the part that matters: the public
+may `INSERT` and nothing else. Without that, anyone holding the publishable
+key could download every message you have ever received, complete with the
+sender's email address and phone number.
+
+**Formspree keeps running.** It is what actually emails the office, and
+nothing in this replaces that. What the table adds is a record you can search
+and filter — an email inbox cannot tell you how many enquiries came in last
+month, which service people ask about most, or whether anyone replied.
+
+| Piece | What it is |
+| --- | --- |
+| `public.enquiries` | The table. Reference numbers look like `EN-2608-4F2B91`. |
+| `submit_enquiry(...)` | The RPC the website calls. Returns the reference. |
+| `public.enquiries_inbox` | Staff-only view, newest first. Powers the Enquiries tab in `#/admin`. |
+| Statuses | `new` → `in-progress` → `replied` → `closed`, plus `spam`. |
+
+Spam is a status rather than a delete, so the pattern stays visible.
+
+The form also records which language the visitor was reading the site in, so
+the team knows whether to reply in English, 繁體 or 简体. That shows as a
+small badge on the enquiry card.
+
+Rate limit: 5 unanswered enquiries per email address per 24 hours. Answering
+one clears the count, since only `new` enquiries are counted.
 
 ---
 

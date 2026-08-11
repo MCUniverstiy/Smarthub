@@ -10,8 +10,12 @@
  *
  * WHAT IT DOES
  *   Renders <ContactPage /> — a small PageHero, then a two-column section
- *   (info + form). The form submits to Formspree (placeholder endpoint) with
- *   four status states: idle / sending / success / error. A hidden honeypot
+ *   (info + form). The form submits to Formspree AND saves the enquiry to
+ *   Supabase, with four status states: idle / sending / success / error.
+ *   Formspree is what emails the office; Supabase is what keeps the enquiry
+ *   as a searchable record in the staff inbox (#/admin). Either one
+ *   succeeding counts as a success, so one being down does not lose the
+ *   message or make the visitor send it twice. A hidden honeypot
  *   field traps spam bots. The service dropdown can be preselected via a
  *   `?service=...` query string in the URL (used by the pricing page deep-links).
  *   Below the form: a Google Maps iframe showing the office location.
@@ -27,6 +31,7 @@
 
 import { useLang } from "@/lib/i18n/lang-context";
 import { pageContent } from "@/lib/i18n/page-content";
+import { submitEnquiry } from "@/lib/supabase";
 import { PageHero } from "@/components/blocks/page-hero";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,6 +120,28 @@ export function ContactPage() {
 
     setStatus("sending");
 
+    // ---- Save the enquiry to Supabase -------------------------------
+    // Fired alongside the Formspree POST, not instead of it. Formspree is
+    // what actually emails the office; this is what keeps the enquiry as a
+    // record the team can search, filter and mark as replied in #/admin.
+    //
+    // Deliberately awaited *before* the Formspree call rather than after,
+    // so that a slow Formspree response cannot leave the record unsaved if
+    // the user closes the tab. Both are fast; the ordering is about which
+    // one survives a half-finished submit.
+    const dbEnquiry = await submitEnquiry({
+      fullName: [formData.get("first_name"), formData.get("last_name")]
+        .map((v) => String(v ?? "").trim())
+        .filter(Boolean)
+        .join(" "),
+      email: String(formData.get("email") ?? "").trim(),
+      phone: String(formData.get("phone") ?? "").trim() || undefined,
+      service: String(formData.get("service") ?? "").trim() || undefined,
+      message: String(formData.get("message") ?? "").trim(),
+      source: "contact-page",
+      lang,
+    }).catch(() => ({ ok: false as const }));
+
     try {
       // Form endpoint — set NEXT_PUBLIC_FORMSPREE_ENDPOINT in your .env or Vercel env vars.
       // Sign up at https://formspree.io to get your own endpoint (looks like https://formspree.io/f/abcd1234).
@@ -127,7 +154,11 @@ export function ContactPage() {
         headers: { Accept: "application/json" },
       });
 
-      if (res.ok) {
+      // Success if EITHER path worked. If Formspree is misconfigured but the
+      // database accepted the enquiry, the message is safely stored and the
+      // team will see it in the inbox — telling the visitor it failed would
+      // make them send it twice.
+      if (res.ok || dbEnquiry.ok) {
         setStatus("success");
         form.reset();
         setTimeout(() => setStatus("idle"), 5000);
@@ -136,8 +167,14 @@ export function ContactPage() {
         setStatus("error");
       }
     } catch {
-      // Network error — show error
-      setStatus("error");
+      // Formspree unreachable. Still a success if the database took it.
+      if (dbEnquiry.ok) {
+        setStatus("success");
+        form.reset();
+        setTimeout(() => setStatus("idle"), 5000);
+      } else {
+        setStatus("error");
+      }
     }
   }
 

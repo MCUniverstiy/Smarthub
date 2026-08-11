@@ -416,3 +416,141 @@ export async function checkAvailability(
     return true;
   }
 }
+
+// ============================================================================
+// CONTACT ENQUIRIES
+// ============================================================================
+// Same shape as the booking API above: one function for the public that
+// writes through an RPC, and staff-only readers that rely on RLS.
+//
+// The contact page still POSTs to Formspree as well. That is deliberate —
+// Formspree is what actually emails the office, and until something else
+// sends that email it must keep running. This just means the enquiry is
+// also kept as a record rather than only as an email.
+
+/** What the contact form collects. */
+export type EnquirySubmission = {
+  fullName: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  /** The service they picked in the dropdown, e.g. "company-formation". */
+  service?: string;
+  message: string;
+  /** Which page the enquiry came from. Defaults to "contact-page". */
+  source?: string;
+  /** Site language at submission time, so the team replies in kind. */
+  lang?: "en" | "zh-HK" | "zh-CN";
+};
+
+export type EnquiryResult =
+  | { ok: true; reference: string }
+  | { ok: false; code: "unconfigured" | "rate-limit" | "invalid" | "network" | "unknown"; message: string };
+
+/**
+ * submitEnquiry — record a contact-form enquiry in the database.
+ *
+ * Failure here is not fatal to the user's experience: the contact page
+ * treats the Formspree POST as the thing that must succeed, and this as
+ * a bonus. So callers can safely ignore a false result.
+ */
+export async function submitEnquiry(
+  data: EnquirySubmission
+): Promise<EnquiryResult> {
+  if (!supabase) {
+    return { ok: false, code: "unconfigured", message: "Supabase is not configured." };
+  }
+
+  try {
+    const { data: rows, error } = await supabase.rpc("submit_enquiry", {
+      p_full_name: data.fullName,
+      p_email: data.email,
+      p_phone: data.phone || null,
+      p_company: data.company || null,
+      p_service: data.service || null,
+      p_message: data.message,
+      p_source: data.source || "contact-page",
+      p_lang: data.lang || null,
+    });
+
+    if (error) {
+      const text = `${error.message} ${error.hint ?? ""}`.toLowerCase();
+      const code = text.includes("enquiries_rate_limit") || text.includes("24 hours")
+        ? "rate-limit"
+        : text.includes("violates check constraint")
+          ? "invalid"
+          : "unknown";
+      return { ok: false, code, message: error.message };
+    }
+
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (!row?.reference) {
+      return { ok: false, code: "unknown", message: "No reference returned." };
+    }
+    return { ok: true, reference: String(row.reference) };
+  } catch (e) {
+    return {
+      ok: false,
+      code: "network",
+      message: e instanceof Error ? e.message : "Network error",
+    };
+  }
+}
+
+/** The statuses the office can set on an enquiry. Mirrors the SQL enum. */
+export const ENQUIRY_STATUSES = [
+  "new",
+  "in-progress",
+  "replied",
+  "closed",
+  "spam",
+] as const;
+
+export type EnquiryStatus = (typeof ENQUIRY_STATUSES)[number];
+
+/** One row of the staff enquiry inbox, as returned by `enquiries_inbox`. */
+export type InboxEnquiry = {
+  reference: string;
+  status: EnquiryStatus;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  company: string | null;
+  service: string | null;
+  message: string;
+  lang: string | null;
+  source: string;
+  internal_note: string | null;
+  created_at: string;
+};
+
+/**
+ * fetchEnquiries — read the enquiry inbox.
+ *
+ * Returns [] for non-staff rather than throwing: RLS filters the rows
+ * away server-side, so "not allowed" and "nothing to show" look the same
+ * from here, which is exactly the point.
+ */
+export async function fetchEnquiries(): Promise<InboxEnquiry[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("enquiries_inbox")
+    .select("*")
+    .limit(500);
+  if (error) return [];
+  return (data ?? []) as InboxEnquiry[];
+}
+
+/** Move an enquiry between statuses. Staff only, enforced by RLS. */
+export async function updateEnquiryStatus(
+  reference: string,
+  status: EnquiryStatus
+): Promise<{ ok: boolean; message?: string }> {
+  if (!supabase) return { ok: false, message: "Supabase is not configured." };
+  const { error } = await supabase
+    .from("enquiries")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("reference", reference);
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
+}

@@ -37,6 +37,7 @@ import {
   Clock,
   LogOut,
   Mail,
+  MessageSquare,
   Phone,
   RefreshCw,
   Users,
@@ -46,15 +47,20 @@ import { Input } from "@/components/ui/input";
 import { formatHKD } from "@/lib/booking-data";
 import {
   BOOKING_STATUSES,
+  ENQUIRY_STATUSES,
   fetchBookings,
+  fetchEnquiries,
   isStaff,
   isSupabaseConfigured,
   signIn,
   signOut,
   supabase,
   updateBookingStatus,
+  updateEnquiryStatus,
   type BookingStatus,
+  type EnquiryStatus,
   type InboxBooking,
+  type InboxEnquiry,
 } from "@/lib/supabase";
 
 /** Tailwind classes per status, so the eye can scan the list quickly. */
@@ -73,6 +79,36 @@ const STATUS_LABELS: Record<BookingStatus, string> = {
 };
 
 /** "2026-09-08" -> "Tue 8 Sep 2026" */
+/** Same idea as STATUS_STYLES, for the enquiry statuses. */
+const ENQUIRY_STYLES: Record<EnquiryStatus, string> = {
+  new: "bg-amber-50 text-amber-700 ring-amber-200",
+  "in-progress": "bg-sky-50 text-sky-700 ring-sky-200",
+  replied: "bg-teal-50 text-teal-700 ring-teal-200",
+  closed: "bg-slate-100 text-slate-600 ring-slate-200",
+  spam: "bg-rose-50 text-rose-700 ring-rose-200",
+};
+
+const ENQUIRY_LABELS: Record<EnquiryStatus, string> = {
+  new: "New",
+  "in-progress": "In progress",
+  replied: "Replied",
+  closed: "Closed",
+  spam: "Spam",
+};
+
+/** "11 Aug 2026, 3:42 pm" — enquiries are timestamps, not calendar dates. */
+function prettyStamp(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function prettyDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return iso;
@@ -100,8 +136,13 @@ export function AdminPage() {
     "checking"
   );
   const [bookings, setBookings] = useState<InboxBooking[]>([]);
+  const [enquiries, setEnquiries] = useState<InboxEnquiry[]>([]);
+  // Which inbox is on screen. Bookings first: they are time-critical in a
+  // way that an enquiry is not.
+  const [tab, setTab] = useState<"bookings" | "enquiries">("bookings");
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<BookingStatus | "all">("pending");
+  const [enquiryFilter, setEnquiryFilter] = useState<EnquiryStatus | "all">("new");
   const [notice, setNotice] = useState<string>("");
 
   // Sign-in form
@@ -113,8 +154,14 @@ export function AdminPage() {
   /** Load the inbox. Separated so the Refresh button can reuse it. */
   const load = useCallback(async () => {
     setLoading(true);
-    const rows = await fetchBookings();
-    setBookings(rows);
+    // Both inboxes at once: two small reads in parallel beats making the
+    // user wait again when they switch tabs.
+    const [bookingRows, enquiryRows] = await Promise.all([
+      fetchBookings(),
+      fetchEnquiries(),
+    ]);
+    setBookings(bookingRows);
+    setEnquiries(enquiryRows);
     setLoading(false);
   }, []);
 
@@ -194,6 +241,44 @@ export function AdminPage() {
     );
   }
 
+  /** Same optimistic update, for enquiries. */
+  async function setEnquiryState(reference: string, status: EnquiryStatus) {
+    const previous = enquiries;
+    setEnquiries((rows) =>
+      rows.map((r) => (r.reference === reference ? { ...r, status } : r))
+    );
+    const res = await updateEnquiryStatus(reference, status);
+    if (!res.ok) {
+      setEnquiries(previous);
+      setNotice(res.message ?? "Could not update that enquiry.");
+      return;
+    }
+    setNotice(`${reference} marked ${ENQUIRY_LABELS[status].toLowerCase()}.`);
+  }
+
+  /** Enquiries matching the current filter. Newest first, as returned. */
+  const visibleEnquiries = useMemo(
+    () =>
+      enquiryFilter === "all"
+        ? enquiries
+        : enquiries.filter((e) => e.status === enquiryFilter),
+    [enquiries, enquiryFilter]
+  );
+
+  const enquiryCounts = useMemo(() => {
+    const c: Record<string, number> = { all: enquiries.length };
+    ENQUIRY_STATUSES.forEach((s) => {
+      c[s] = enquiries.filter((e) => e.status === s).length;
+    });
+    return c;
+  }, [enquiries]);
+
+  /** Unanswered enquiries — shown on the tab so nothing rots unnoticed. */
+  const unreadEnquiries = useMemo(
+    () => enquiries.filter((e) => e.status === "new").length,
+    [enquiries]
+  );
+
   /** Bookings matching the current filter, grouped by date. */
   const grouped = useMemo(() => {
     const rows =
@@ -227,6 +312,8 @@ export function AdminPage() {
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-600">
             Run <code className="rounded bg-white px-1.5 py-0.5">supabase/schema.sql</code>{" "}
+            and{" "}
+            <code className="rounded bg-white px-1.5 py-0.5">supabase/enquiries.sql</code>{" "}
             in the Supabase SQL editor, then set{" "}
             <code className="rounded bg-white px-1.5 py-0.5">NEXT_PUBLIC_SUPABASE_URL</code>{" "}
             and{" "}
@@ -341,11 +428,20 @@ export function AdminPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-slate-900 sm:text-3xl">
-            Booking inbox
+            {tab === "bookings" ? "Booking inbox" : "Enquiry inbox"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            {bookings.length} booking{bookings.length === 1 ? "" : "s"} in the database.
-            Overlaps are impossible — the database refuses them.
+            {tab === "bookings" ? (
+              <>
+                {bookings.length} booking{bookings.length === 1 ? "" : "s"} in the
+                database. Overlaps are impossible — the database refuses them.
+              </>
+            ) : (
+              <>
+                {enquiries.length} enquir{enquiries.length === 1 ? "y" : "ies"} from
+                the contact form. Emails still arrive as before; this is the record.
+              </>
+            )}
           </p>
         </div>
         <div className="flex gap-2">
@@ -373,6 +469,36 @@ export function AdminPage() {
         </div>
       )}
 
+      {/* Which inbox. Bookings and enquiries are different jobs, so they
+          get separate lists rather than one merged feed. */}
+      <div className="mb-5 flex gap-1 rounded-full bg-slate-100 p-1">
+        {(["bookings", "enquiries"] as const).map((key) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${
+              tab === key
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            {key}
+            {key === "bookings" && counts.pending > 0 && (
+              <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
+                {counts.pending}
+              </span>
+            )}
+            {key === "enquiries" && unreadEnquiries > 0 && (
+              <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
+                {unreadEnquiries}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {tab === "bookings" ? (
+      <>
       {/* Filter chips */}
       <div className="mb-6 flex flex-wrap gap-2">
         {(["all", ...BOOKING_STATUSES] as const).map((s) => (
@@ -517,6 +643,139 @@ export function AdminPage() {
             </section>
           ))}
         </div>
+      )}
+      </>
+      ) : (
+      /* ---------------- Enquiries ---------------- */
+      <>
+      <div className="mb-6 flex flex-wrap gap-2">
+        {(["all", ...ENQUIRY_STATUSES] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setEnquiryFilter(s)}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ring-1 transition ${
+              enquiryFilter === s
+                ? "bg-slate-900 text-white ring-slate-900"
+                : "bg-white text-slate-600 ring-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            {s === "all" ? "All" : ENQUIRY_LABELS[s]}{" "}
+            <span className="opacity-60">{enquiryCounts[s] ?? 0}</span>
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <p className="py-16 text-center text-sm text-slate-500">Loading enquiries…</p>
+      ) : visibleEnquiries.length === 0 ? (
+        <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
+          <MessageSquare className="mx-auto h-8 w-8 text-slate-300" />
+          <p className="mt-3 text-sm text-slate-500">
+            {enquiryFilter === "all"
+              ? "No enquiries yet."
+              : `No ${ENQUIRY_LABELS[enquiryFilter as EnquiryStatus].toLowerCase()} enquiries.`}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {visibleEnquiries.map((e) => (
+            <article
+              key={e.reference}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-slate-900">{e.full_name}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1 ${
+                        ENQUIRY_STYLES[e.status]
+                      }`}
+                    >
+                      {ENQUIRY_LABELS[e.status]}
+                    </span>
+                    {/* Which language they wrote in, so the reply matches. */}
+                    {e.lang && e.lang !== "en" && (
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                        {e.lang === "zh-HK" ? "繁體" : "简体"}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {prettyStamp(e.created_at)} · {e.reference}
+                    {e.service && <> · asked about {e.service}</>}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {/* Pre-addressed reply: the office answers by email anyway. */}
+                  <Button size="sm" variant="outline" asChild>
+                    <a
+                      href={`mailto:${e.email}?subject=${encodeURIComponent(
+                        `Re: your enquiry (${e.reference})`
+                      )}`}
+                    >
+                      <Mail className="mr-1.5 h-3.5 w-3.5" /> Reply
+                    </a>
+                  </Button>
+                  {e.status !== "replied" && (
+                    <Button
+                      size="sm"
+                      onClick={() => void setEnquiryState(e.reference, "replied")}
+                      className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    >
+                      Mark replied
+                    </Button>
+                  )}
+                  {e.status !== "closed" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void setEnquiryState(e.reference, "closed")}
+                    >
+                      Close
+                    </Button>
+                  )}
+                  {e.status !== "spam" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void setEnquiryState(e.reference, "spam")}
+                    >
+                      Spam
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <p className="mt-3 whitespace-pre-wrap border-t border-slate-100 pt-3 text-sm leading-relaxed text-slate-700">
+                {e.message}
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                <a
+                  href={`mailto:${e.email}`}
+                  className="flex items-center gap-1.5 text-teal-700 hover:underline"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  {e.email}
+                </a>
+                {e.phone && (
+                  <a
+                    href={`tel:${e.phone}`}
+                    className="flex items-center gap-1.5 text-teal-700 hover:underline"
+                  >
+                    <Phone className="h-3.5 w-3.5" />
+                    {e.phone}
+                  </a>
+                )}
+                {e.company && <span className="text-slate-500">{e.company}</span>}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+      </>
       )}
     </Shell>
   );
