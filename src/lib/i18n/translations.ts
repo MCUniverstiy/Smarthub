@@ -110,7 +110,7 @@ export const translations = {
     topbar: {
       phone: "+852 2383 3283",
       whatsapp: "WhatsApp 5501 3516",
-      email: "hello@smarthubc.com",
+      email: "info@smarthubc.com",
       licence: "TCSP Licensed · TC010264",
     },
     // hero — homepage hero section: eyebrow tag, big headline (split
@@ -481,7 +481,7 @@ export const translations = {
     topbar: {
       phone: "+852 2383 3283",
       whatsapp: "WhatsApp 5501 3516",
-      email: "hello@smarthubc.com",
+      email: "info@smarthubc.com",
       licence: "TCSP 持牌 · TC010264",
     },
     hero: {
@@ -807,7 +807,7 @@ export const translations = {
     topbar: {
       phone: "+852 2383 3283",
       whatsapp: "WhatsApp 5501 3516",
-      email: "hello@smarthubc.com",
+      email: "info@smarthubc.com",
       licence: "TCSP 持牌 · TC010264",
     },
     hero: {

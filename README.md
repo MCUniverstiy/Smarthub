@@ -28,7 +28,7 @@ These items require the boss's input or external service setup. None of them can
 | **Real TCSP licence number** | `src/lib/site-data.ts` → `tcspLicence` | `TC010264` (verify on [cr.gov.hk](https://www.cr.gov.hk)) |
 | **Real phone number** | `src/lib/site-data.ts` → `phone` | `+852 2383 3283` |
 | **Real WhatsApp number** | `src/lib/site-data.ts` → `whatsapp`, `whatsappUrl` | `+852 5501 3516` |
-| **Real email** | `src/lib/site-data.ts` → `email` | `hello@smarthubc.com` |
+| **Real email** | `src/lib/site-data.ts` → `email` | `info@smarthubc.com` |
 | **Real office address** | `src/lib/site-data.ts` → `address`, `addressZh`, `addressCn` | `25/F, 88 Lockhart Road, Wan Chai` |
 | **Real stats** | `src/lib/site-data.ts` → `heroStats`, `sectionStats` | `25+`, `1,200+`, `98%`, `6` etc. (all fabricated) |
 | **Real pricing** | `src/lib/i18n/translations.ts` → `pricing.tiers`, `pricing.workspace` | Made-up HK market rates |

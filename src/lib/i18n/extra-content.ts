@@ -111,7 +111,7 @@ export const extraContent = {
           },
           {
             h: "5. Your Rights",
-            p: "Under PDPO, you have the right to: request access to your personal data, request correction of inaccurate data, request that we stop using your data for direct marketing, and complain to the Privacy Commissioner for Personal Data if you believe we have violated the PDPO. To exercise any of these rights, email hello@smarthubc.com.",
+            p: "Under PDPO, you have the right to: request access to your personal data, request correction of inaccurate data, request that we stop using your data for direct marketing, and complain to the Privacy Commissioner for Personal Data if you believe we have violated the PDPO. To exercise any of these rights, email info@smarthubc.com.",
           },
           {
             h: "6. Cookies",
@@ -119,7 +119,7 @@ export const extraContent = {
           },
           {
             h: "7. Contact",
-            p: "If you have any questions about this Privacy Policy or how we handle your data, contact us at: Smarthub Connect Limited, 25/F, 88 Lockhart Road, Wan Chai, Hong Kong. Email: hello@smarthubc.com. Phone: +852 2383 3283.",
+            p: "If you have any questions about this Privacy Policy or how we handle your data, contact us at: Smarthub Connect Limited, 25/F, 88 Lockhart Road, Wan Chai, Hong Kong. Email: info@smarthubc.com. Phone: +852 2383 3283.",
           },
         ],
       },
@@ -167,7 +167,7 @@ export const extraContent = {
         sections: [
           {
             h: "1. How to Make a Complaint",
-            p: "You may submit a complaint in writing by: email to hello@smarthubc.com (subject line: \u201cComplaint\u201d); post to Complaints Officer, Smarthub Connect Limited, 25/F, 88 Lockhart Road, Wan Chai, Hong Kong; or in person at our office during business hours. Please include: your name and contact details, the nature of the complaint, the date(s) of the incident, the names of any staff involved (if known), and the outcome you are seeking.",
+            p: "You may submit a complaint in writing by: email to info@smarthubc.com (subject line: \u201cComplaint\u201d); post to Complaints Officer, Smarthub Connect Limited, 25/F, 88 Lockhart Road, Wan Chai, Hong Kong; or in person at our office during business hours. Please include: your name and contact details, the nature of the complaint, the date(s) of the incident, the names of any staff involved (if known), and the outcome you are seeking.",
           },
           {
             h: "2. Acknowledgement",
@@ -289,7 +289,7 @@ export const extraContent = {
           },
           {
             h: "5. 您嘅權利",
-            p: "根據 PDPO，您有權：要求查閱您嘅個人資料、要求更正不準確資料、要求我哋停止將您嘅資料用於直銷，同埋向個人資料私隱專員投訴（如您認為我哋違反 PDPO）。要行使任何權利，請電郵 hello@smarthubc.com。",
+            p: "根據 PDPO，您有權：要求查閱您嘅個人資料、要求更正不準確資料、要求我哋停止將您嘅資料用於直銷，同埋向個人資料私隱專員投訴（如您認為我哋違反 PDPO）。要行使任何權利，請電郵 info@smarthubc.com。",
           },
           {
             h: "6. Cookies",
@@ -297,7 +297,7 @@ export const extraContent = {
           },
           {
             h: "7. 聯絡",
-            p: "如對本私隱政策或我哋如何處理您嘅資料有任何疑問，請聯絡：Smarthub Connect Limited，香港灣仔駱克道 88 號 25 樓。電郵：hello@smarthubc.com。電話：+852 2383 3283。",
+            p: "如對本私隱政策或我哋如何處理您嘅資料有任何疑問，請聯絡：Smarthub Connect Limited，香港灣仔駱克道 88 號 25 樓。電郵：info@smarthubc.com。電話：+852 2383 3283。",
           },
         ],
       },
@@ -345,7 +345,7 @@ export const extraContent = {
         sections: [
           {
             h: "1. 點樣投訴",
-            p: "您可以書面提交投訴：電郵至 hello@smarthubc.com（主旨：「投訴」）；郵寄至 Complaints Officer, Smarthub Connect Limited, 香港灣仔駱克道 88 號 25 樓；或營業時間內親臨我哋辦公室。請附上：您嘅姓名同聯絡資料、投訴性質、事件日期、涉及員工姓名（如有）同您希望嘅結果。",
+            p: "您可以書面提交投訴：電郵至 info@smarthubc.com（主旨：「投訴」）；郵寄至 Complaints Officer, Smarthub Connect Limited, 香港灣仔駱克道 88 號 25 樓；或營業時間內親臨我哋辦公室。請附上：您嘅姓名同聯絡資料、投訴性質、事件日期、涉及員工姓名（如有）同您希望嘅結果。",
           },
           {
             h: "2. 確認",
@@ -467,7 +467,7 @@ export const extraContent = {
           },
           {
             h: "5. 您的权利",
-            p: "根据 PDPO，您有权：要求查阅您的个人资料、要求更正不准确资料、要求我们停止将您的资料用于直销，以及向个人资料隐私专员投诉（如您认为我们违反 PDPO）。要行使任何权利，请电邮 hello@smarthubc.com。",
+            p: "根据 PDPO，您有权：要求查阅您的个人资料、要求更正不准确资料、要求我们停止将您的资料用于直销，以及向个人资料隐私专员投诉（如您认为我们违反 PDPO）。要行使任何权利，请电邮 info@smarthubc.com。",
           },
           {
             h: "6. Cookies",
@@ -475,7 +475,7 @@ export const extraContent = {
           },
           {
             h: "7. 联络",
-            p: "如对本隐私政策或我们如何处理您的资料有任何疑问，请联络：Smarthub Connect Limited，香港湾仔骆克道 88 号 25 楼。电邮：hello@smarthubc.com。电话：+852 2383 3283。",
+            p: "如对本隐私政策或我们如何处理您的资料有任何疑问，请联络：Smarthub Connect Limited，香港湾仔骆克道 88 号 25 楼。电邮：info@smarthubc.com。电话：+852 2383 3283。",
           },
         ],
       },
@@ -523,7 +523,7 @@ export const extraContent = {
         sections: [
           {
             h: "1. 如何投诉",
-            p: "您可以书面提交投诉：电邮至 hello@smarthubc.com（主旨：「投诉」）；邮寄至 Complaints Officer, Smarthub Connect Limited, 香港湾仔骆克道 88 号 25 楼；或营业时间内亲临我们办公室。请附上：您的姓名与联络资料、投诉性质、事件日期、涉及员工姓名（如有）与您希望的结果。",
+            p: "您可以书面提交投诉：电邮至 info@smarthubc.com（主旨：「投诉」）；邮寄至 Complaints Officer, Smarthub Connect Limited, 香港湾仔骆克道 88 号 25 楼；或营业时间内亲临我们办公室。请附上：您的姓名与联络资料、投诉性质、事件日期、涉及员工姓名（如有）与您希望的结果。",
           },
           {
             h: "2. 确认",
