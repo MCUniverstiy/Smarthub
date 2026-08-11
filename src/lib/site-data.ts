@@ -140,7 +140,7 @@ export const companyFacts = {
   phone: "+852 2383 3283",
   whatsapp: "+852 5501 3516",
   whatsappUrl: "https://wa.me/85255013516",
-  email: "hello@smarthubc.com",
+  email: "info@smarthubc.com",
   address: "25/F, 88 Lockhart Road, Wan Chai, Hong Kong",
   addressZh: "香港灣仔駱克道 88 號 25 樓",
   addressCn: "香港湾仔骆克道 88 号 25 楼",

@@ -31,6 +31,7 @@ import { pageContent } from "@/lib/i18n/page-content";
 import { PageHero } from "@/components/blocks/page-hero";
 import { SectionHeading } from "@/components/blocks/section-heading";
 import { CTABand } from "@/components/blocks/cta-band";
+import { RoomRates } from "@/components/blocks/room-rates";
 import { Button } from "@/components/ui/button";
 import { Check, ArrowRight, Briefcase, Building2, Wifi, Presentation } from "lucide-react";
 import Image from "next/image";
@@ -86,6 +87,10 @@ export function ServicesPage() {
               const Icon = SERVICE_ICONS[i] ?? Briefcase;
               // Flip the image to the right on odd-indexed rows (2nd, 4th, ...).
               const flip = i % 2 === 1;
+              // The last service ("Meeting & Event Space") is bookable online,
+              // so its CTA points at the booking funnel rather than the
+              // generic enquiry form.
+              const isBookable = i === t.services.items.length - 1;
               return (
                 <div
                   key={i}
@@ -136,22 +141,53 @@ export function ServicesPage() {
                         </li>
                       ))}
                     </ul>
-                    <div className="mt-7">
-                      <Button
-                        asChild
-                        className="bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/25 hover:from-teal-600 hover:to-teal-700"
-                      >
-                        <RouterLink to="contact">
-                          {p.detailCta}
-                          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                        </RouterLink>
-                      </Button>
+                    {/* CTA row. The "Meeting & Event Space" service (last in
+                        the list) is self-service, so it sends visitors to the
+                        booking page instead of the generic enquiry form; the
+                        enquiry link stays available as a secondary action. */}
+                    <div className="mt-7 flex flex-wrap gap-3">
+                      {isBookable ? (
+                        <>
+                          <Button
+                            asChild
+                            className="bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/25 hover:from-teal-600 hover:to-teal-700"
+                          >
+                            <RouterLink to="book">
+                              {t.booking.bookAllCta}
+                              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                            </RouterLink>
+                          </Button>
+                          <Button asChild variant="outline" className="border-slate-200">
+                            <RouterLink to="contact">{p.detailCta}</RouterLink>
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          asChild
+                          className="bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/25 hover:from-teal-600 hover:to-teal-700"
+                        >
+                          <RouterLink to="contact">
+                            {p.detailCta}
+                            <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                          </RouterLink>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* ===== BOOKABLE ROOM RATES ===== */}
+      {/* Shows the live hourly/daily rates for the six bookable spaces. Each
+          row deep-links into #/book with that room preselected, turning the
+          "Meeting & Event Space" service above into a one-click action. */}
+      <section className="bg-white pb-20 lg:pb-24">
+        <div className="mx-auto max-w-5xl px-6">
+          <RoomRates />
         </div>
       </section>
 

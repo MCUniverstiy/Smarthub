@@ -1,7 +1,7 @@
 # File: contact.tsx
 
 ## What This File Does
-`contact.tsx` is the **Contact page**. It exports a `ContactPage` component that renders a two-column layout (contact info on the left, a working contact form on the right) plus a Google Maps embed below. The form posts to a Formspree endpoint (placeholder for now), supports four submit states (idle/sending/success/error), includes a hidden honeypot anti-spam field, and can preselect a service in its dropdown via a `?service=...` URL query string (used by the pricing page's deep-link CTAs).
+`contact.tsx` is the **Contact page**. It exports a `ContactPage` component that renders a two-column layout (contact info on the left, a working contact form on the right) plus a Google Maps embed below. The form saves the enquiry to Supabase via `submitEnquiry` (and optionally relays it to a form service, if one is configured), supports four submit states (idle/sending/success/error), includes a hidden honeypot anti-spam field, and can preselect a service in its dropdown via a `?service=...` URL query string (used by the pricing page's deep-link CTAs).
 
 ## Where It Lives in the Project
 - **Path:** `src/components/pages/contact.tsx`
@@ -27,7 +27,7 @@ The visitor sees, top to bottom:
 - **Honeypot anti-spam field** — a hidden form input named `_gotcha`. Humans never see it (CSS `hidden` + `aria-hidden` + `tabIndex={-1}`), so they leave it blank. Bots that auto-fill all form fields will populate it. On submit, the handler checks if `_gotcha` has a value; if so, it pretends success and silently aborts (never sends the data). This is a lightweight, no-CAPTCHA spam filter.
 - **`FormData`** — a built-in browser API for reading all named form fields at once. `new FormData(form)` collects every input's value, which `fetch` can POST directly as a multipart body (no manual JSON serialization needed).
 - **`async/await` + `try/catch`** — the `onSubmit` handler is async because it `await`s the fetch. The `try/catch` distinguishes HTTP errors (non-2xx response) from network errors (fetch threw).
-- **Formspree** — a third-party form backend that accepts POSTs to `https://formspree.io/f/<form-id>` and emails the submissions. The endpoint here is a placeholder (`your-form-id`) that must be replaced before launch.
+- **Email relay (optional)** — `NEXT_PUBLIC_FORMSPREE_ENDPOINT` can point at Formspree or any drop-in replacement to get an extra copy of each enquiry by email. It is **off by default**, and the placeholder value `your-form-id` is treated as unset. Formspree's free tier is 50 submissions/month, which is why it is not the primary path. For alerts, `supabase/notify-email.sql` is the better option.
 - **Service preselect from URL** — the `preselectedService` state initializer parses `window.location.hash` for a `?service=...` query string. The `Select` component's `defaultValue={preselectedService}` makes the dropdown start on that option. The pricing page builds these deep-link URLs.
 - **`Select` (shadcn/ui)** — a styled wrapper around Radix UI's Select primitive. `defaultValue` sets the initial selection; `SelectTrigger`/`SelectValue`/`SelectContent`/`SelectItem` compose the dropdown.
 - **`Button` disabled state** — `disabled={status === "sending" || status === "success"}` prevents double-submits while a request is in flight and locks the button after success.
@@ -40,7 +40,19 @@ The visitor sees, top to bottom:
 - Reads `{ t, lang }`, `p`, and sets up `status` + `preselectedService` state.
 
 ### `onSubmit` async function
-- Prevents default, builds `FormData`, checks honeypot, sets status to "sending", POSTs to Formspree, transitions to success/error. See the JSDoc comment in the file for the full flow.
+- Prevents default, builds `FormData`, checks honeypot, sets status to "sending", saves the enquiry to Supabase, POSTs to Formspree, transitions to success/error. See the JSDoc comment in the file for the full flow.
+
+### The database is the system of record
+
+The submit handler writes to Supabase first and awaits it. That write is the one that matters: it puts the enquiry where the team reads it (`#/admin` → Enquiries), it has no monthly quota, and it is what the success message is really promising.
+
+An email relay is POSTed to afterwards **only if `NEXT_PUBLIC_FORMSPREE_ENDPOINT` is set to something real**. The old placeholder (`your-form-id`) is explicitly treated as unset, because posting to it 404s on every submit. Skipping the request entirely is faster and quieter than firing one that always fails.
+
+The order is deliberate: the durable write happens before the optional one, so a slow relay cannot leave the enquiry unsaved if the visitor closes the tab mid-request.
+
+Status becomes `success` if **either** path stored it, and `error` only when neither did — at which point the visitor is told to phone or email, and both are on screen beside the form. Showing an error while the database already holds the message would just make them send it twice.
+
+Neither call can throw out of the handler: `submitEnquiry` returns a result object and is additionally `.catch()`-guarded, and the relay is wrapped in its own `try`.
 
 ### `infoItems` array
 - An array of 5 contact-info objects, each with `{ icon, label, value, href? }`. Built before the JSX so the render is just a `.map`.

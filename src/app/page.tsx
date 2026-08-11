@@ -47,6 +47,8 @@ import { ServicesPage } from "@/components/pages/services";
 import { WhyHKPage } from "@/components/pages/why-hk";
 import { PricingPage } from "@/components/pages/pricing";
 import { InsightsPage } from "@/components/pages/insights";
+import { BookingPage } from "@/components/pages/booking";
+import { AdminPage } from "@/components/pages/admin";
 import { ContactPage } from "@/components/pages/contact";
 import { LegalPage } from "@/components/pages/legal";
 import { NotFoundPage } from "@/components/pages/not-found";
@@ -83,6 +85,12 @@ function RouterOutlet() {
       return <PricingPage />;
     case "insights":
       return <InsightsPage />;
+    case "book":
+      return <BookingPage />;
+    // Internal staff tool. Deliberately absent from the navbar,
+    // footer and sitemap — reachable only by typing #/admin.
+    case "admin":
+      return <AdminPage />;
     case "contact":
       return <ContactPage />;
     // The four legal routes all share the LegalPage component, passing

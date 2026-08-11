@@ -45,6 +45,8 @@ import { pageContent } from "./page-content";
 // `extraContent` holds the supplementary strings (cookie banner, legal,
 // footer extras, not-found, why-hk extras, etc.).
 import { extraContent } from "./extra-content";
+// `bookingContent` holds every string for the room-booking page (#/book).
+import { bookingContent } from "./booking-content";
 
 /**
  * buildDict — merge all three translation sources into ONE dictionary
@@ -83,6 +85,7 @@ function buildDict(lang: Lang) {
     pricingExtra: extraContent[lang].pricing,      // pricing page extras
     contactExtra: extraContent[lang].contact,      // contact page extras
     legal: extraContent[lang].legal,               // legal page strings
+    booking: bookingContent[lang],                 // room-booking page (#/book)
   };
 }
 

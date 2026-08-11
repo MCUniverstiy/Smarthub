@@ -10,8 +10,11 @@
  *
  * WHAT IT DOES
  *   Renders <ContactPage /> — a small PageHero, then a two-column section
- *   (info + form). The form submits to Formspree (placeholder endpoint) with
- *   four status states: idle / sending / success / error. A hidden honeypot
+ *   (info + form). The form saves the enquiry to Supabase, where the team
+ *   reads it in the staff inbox (#/admin), with four status states:
+ *   idle / sending / success / error. An optional email relay
+ *   (NEXT_PUBLIC_FORMSPREE_ENDPOINT) is POSTed to as well, but only if it
+ *   is actually configured — the database is the system of record. A hidden honeypot
  *   field traps spam bots. The service dropdown can be preselected via a
  *   `?service=...` query string in the URL (used by the pricing page deep-links).
  *   Below the form: a Google Maps iframe showing the office location.
@@ -27,6 +30,7 @@
 
 import { useLang } from "@/lib/i18n/lang-context";
 import { pageContent } from "@/lib/i18n/page-content";
+import { submitEnquiry } from "@/lib/supabase";
 import { PageHero } from "@/components/blocks/page-hero";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,12 +50,13 @@ import {
   MessageCircle,
   Clock,
   Send,
+  CalendarDays,
   CheckCircle2,
   AlertCircle,
   Navigation,
 } from "lucide-react";
 import { companyFacts } from "@/lib/site-data";
-import { RouterLink } from "@/lib/router";
+import { RouterLink, hashQuery } from "@/lib/router";
 
 /**
  * ContactPage — top-level page component for the /contact route.
@@ -63,7 +68,8 @@ import { RouterLink } from "@/lib/router";
  *   - `status`: "idle" | "sending" | "success" | "error" — drives the submit
  *     button's label and disabled state, plus the error banner.
  *   - `preselectedService`: optional string parsed from the URL query string
- *     on first render. Used as the `defaultValue` of the service <Select>.
+ *     on first render (via the router's `hashQuery()` helper, which already
+ *     decodes the values). Used as the `defaultValue` of the service <Select>.
  *
  * Hooks: useLang() → { t, lang }.
  */
@@ -75,16 +81,11 @@ export function ContactPage() {
   // Lazy-initialize the preselected service from the URL hash query string.
   // e.g. URL #/contact?service=Company%20Incorporation → preselectedService
   //   = "Company Incorporation". The `typeof window === "undefined"` check
-  //   is a server-side-rendering guard (Next.js runs components on the server
-  //   first, where `window` doesn't exist).
-  const [preselectedService, setPreselectedService] = useState<string | undefined>(() => {
-    if (typeof window === "undefined") return undefined;
-    const hash = window.location.hash;
-    const qIndex = hash.indexOf("?");
-    if (qIndex === -1) return undefined;
-    const params = new URLSearchParams(hash.slice(qIndex + 1));
-    const svc = params.get("service");
-    return svc ? decodeURIComponent(svc) : undefined;
+  //   `hashQuery()` handles the server-side-rendering guard and returns an
+  //   empty params object when there's no query string.
+  const [preselectedService] = useState<string | undefined>(() => {
+    const svc = hashQuery().get("service");
+    return svc ?? undefined;
   });
 
   /**
@@ -96,10 +97,12 @@ export function ContactPage() {
    *   2. Build a FormData object from the form fields.
    *   3. Honeypot check: if the hidden `_gotcha` field has any value, a bot
    *      filled it in — pretend success and abort (don't actually send).
-   *   4. Set status to "sending", POST the FormData to Formspree.
-   *   5. On 2xx response: set status to "success", reset the form, revert to
-   *      "idle" after 5 seconds.
-   *   6. On non-2xx or network error: set status to "error".
+   *   4. Set status to "sending", save the enquiry to Supabase.
+   *   5. If an email relay endpoint is configured, POST the FormData there
+   *      too. Skipped entirely when it is unset or still the placeholder.
+   *   6. If either stored it: "success", reset the form, back to "idle"
+   *      after 5 seconds. If neither did: "error", so the visitor knows to
+   *      phone or email instead.
    */
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -118,28 +121,62 @@ export function ContactPage() {
 
     setStatus("sending");
 
-    try {
-      // Form endpoint — set NEXT_PUBLIC_FORMSPREE_ENDPOINT in your .env or Vercel env vars.
-      // Sign up at https://formspree.io to get your own endpoint (looks like https://formspree.io/f/abcd1234).
-      // Until you set this, the form will fail gracefully and show the error message.
-      const endpoint =
-        process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT || "https://formspree.io/f/your-form-id";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
-        headers: { Accept: "application/json" },
-      });
+    // ---- 1. Save the enquiry to the database ------------------------
+    // This is the primary path. The database is the system of record: it
+    // keeps the enquiry where the team can search it, filter it and mark
+    // it replied in #/admin, and it has no monthly quota.
+    //
+    // Awaited before the optional email relay below, so that a slow relay
+    // cannot leave the enquiry unsaved if the visitor closes the tab.
+    const dbEnquiry = await submitEnquiry({
+      fullName: [formData.get("first_name"), formData.get("last_name")]
+        .map((v) => String(v ?? "").trim())
+        .filter(Boolean)
+        .join(" "),
+      email: String(formData.get("email") ?? "").trim(),
+      phone: String(formData.get("phone") ?? "").trim() || undefined,
+      service: String(formData.get("service") ?? "").trim() || undefined,
+      message: String(formData.get("message") ?? "").trim(),
+      source: "contact-page",
+      lang,
+    }).catch(() => ({ ok: false as const }));
 
-      if (res.ok) {
-        setStatus("success");
-        form.reset();
-        setTimeout(() => setStatus("idle"), 5000);
-      } else {
-        // Real failure — show error so user knows to retry or email us directly
-        setStatus("error");
+    // ---- 2. Optionally relay it to a form service -------------------
+    // Formspree (or any drop-in replacement) is entirely optional and OFF
+    // unless NEXT_PUBLIC_FORMSPREE_ENDPOINT is set to a real endpoint. Its
+    // free tier is only 50 submissions a month, so it is a nice-to-have
+    // email relay, never the thing the enquiry depends on.
+    //
+    // The old placeholder default ("your-form-id") is treated as unset:
+    // posting to it would 404 on every submit.
+    const endpoint = process.env.NEXT_PUBLIC_FORMSPREE_ENDPOINT;
+    const relayConfigured = Boolean(endpoint && !endpoint.includes("your-form-id"));
+
+    let relayed = false;
+    if (relayConfigured) {
+      try {
+        const res = await fetch(endpoint as string, {
+          method: "POST",
+          body: formData,
+          headers: { Accept: "application/json" },
+        });
+        relayed = res.ok;
+      } catch {
+        // Relay unreachable — irrelevant if the database took the enquiry.
+        relayed = false;
       }
-    } catch {
-      // Network error — show error
+    }
+
+    // Success if the enquiry landed anywhere durable. Showing an error
+    // when the database already holds the message would just make the
+    // visitor send it twice.
+    if (dbEnquiry.ok || relayed) {
+      setStatus("success");
+      form.reset();
+      setTimeout(() => setStatus("idle"), 5000);
+    } else {
+      // Nothing stored it. The error state tells them to email or call
+      // instead, and those details are on screen beside the form.
       setStatus("error");
     }
   }
@@ -224,6 +261,32 @@ export function ContactPage() {
 
             {/* Right: Form column — the contact form itself. */}
             <div className="lg:col-span-3">
+              {/* Deflection banner: room hire is self-service, so point
+                  those visitors at the booking funnel before they type out
+                  a free-text enquiry the team would have to reply to. */}
+              <div className="mb-6 flex flex-col items-start justify-between gap-3 rounded-2xl border border-teal-200 bg-teal-50/60 p-5 sm:flex-row sm:items-center">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-teal-600 ring-1 ring-teal-100">
+                    <CalendarDays className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="font-display text-sm font-bold text-slate-900">
+                      {t.booking.homeTitle}
+                    </div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
+                      {t.booking.homeLead}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  asChild
+                  size="sm"
+                  className="shrink-0 bg-gradient-to-r from-teal-500 to-teal-600 text-white"
+                >
+                  <RouterLink to="book">{t.booking.ctaShort}</RouterLink>
+                </Button>
+              </div>
+
               {/* The <form> element wires its submit event to `onSubmit`.
                   `noValidate={false}` lets the browser run its built-in
                   validation (required, type=email, etc.). */}

@@ -13,7 +13,7 @@ Built with Next.js 16 + TypeScript + Tailwind CSS 4 + shadcn/ui. Design inspired
 **Quick start:**
 1. Push code to GitHub (private repo)
 2. Go to https://vercel.com/new → import the repo
-3. Add env var `NEXT_PUBLIC_FORMSPREE_ENDPOINT` (get one at https://formspree.io)
+3. Add env vars `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (see `docs/supabase-keys.md`)
 4. Click Deploy
 5. Add your custom domain in Vercel → Settings → Domains
 
@@ -23,16 +23,22 @@ Built with Next.js 16 + TypeScript + Tailwind CSS 4 + shadcn/ui. Design inspired
 
 These items require the boss's input or external service setup. None of them can be done from code alone.
 
+A full pre-merge audit — what was security-tested, what is safe, and what still needs a human decision — is in [`docs/pre-merge-audit.md`](docs/pre-merge-audit.md).
+
 | Item | Where to update | Current placeholder |
 |---|---|---|
 | **Real TCSP licence number** | `src/lib/site-data.ts` → `tcspLicence` | `TC010264` (verify on [cr.gov.hk](https://www.cr.gov.hk)) |
 | **Real phone number** | `src/lib/site-data.ts` → `phone` | `+852 2383 3283` |
 | **Real WhatsApp number** | `src/lib/site-data.ts` → `whatsapp`, `whatsappUrl` | `+852 5501 3516` |
-| **Real email** | `src/lib/site-data.ts` → `email` | `hello@smarthubc.com` |
+| **Real email** | `src/lib/site-data.ts` → `email` | `info@smarthubc.com` |
 | **Real office address** | `src/lib/site-data.ts` → `address`, `addressZh`, `addressCn` | `25/F, 88 Lockhart Road, Wan Chai` |
 | **Real stats** | `src/lib/site-data.ts` → `heroStats`, `sectionStats` | `25+`, `1,200+`, `98%`, `6` etc. (all fabricated) |
 | **Real pricing** | `src/lib/i18n/translations.ts` → `pricing.tiers`, `pricing.workspace` | Made-up HK market rates |
-| **Real Formspree ID** | `src/components/pages/contact.tsx` line 56 | `your-form-id` |
+| **Verify room rates** | `src/lib/booking-data.ts` → `ROOMS` | Copied from the live Google Form — confirm they're current, and keep the form's own "Room Information" text in sync |
+| **Real room photos** | `src/lib/booking-data.ts` → `ROOMS[].image` | Unsplash stock photos |
+| **Run the booking database** | Paste `supabase/schema.sql` into the Supabase SQL editor | Not run yet — without it the site still works, but the Google Form cannot prevent double bookings |
+| **Supabase env vars** | `.env.local` + Vercel — where to find the keys: [`docs/supabase-keys.md`](docs/supabase-keys.md) | Unset (booking falls back to Google Form only) |
+| **Create a staff login** | Supabase → Authentication → Users, then `insert into public.staff` — step-by-step in [`docs/staff-login.md`](docs/staff-login.md) | None yet — `#/admin` shows "no access" until one exists |
 | **Real newsletter provider** | `src/components/pages/insights.tsx` → `onSubscribe` | Just flips button label |
 | **Real images** | All `images.unsplash.com` URLs across `src/components/pages/*` | Stock photos |
 | **Real insights articles** | `src/lib/i18n/translations.ts` → `insights.items` + `page-content.ts` → `insights.featured` | Titles + excerpts only |
@@ -113,7 +119,6 @@ my-project/
 │       │
 │       ├── router.tsx               # Custom hash router (12 routes, scroll-to-top, RouterLink component)
 │       ├── site-data.ts             # 📍 SINGLE SOURCE OF TRUTH for company facts (phone, email, address, stats)
-│       ├── db.ts                    # Prisma client (unused, scaffold)
 │       └── utils.ts                 # cn() class merge helper
 │
 ├── scripts/
@@ -139,11 +144,14 @@ my-project/
 
 - **`src/lib/site-data.ts`** — 📍 **Edit this file to update company facts everywhere.** Contains `companyFacts` (phone, email, address, TCSP licence, etc.) and `heroStats` / `sectionStats` (the numbers shown on home + about + stats band). When the boss gives you real numbers, change them HERE ONLY and they propagate everywhere.
 
-### Translations (3 files merged at runtime)
+- **`src/lib/booking-data.ts`** — 📍 **Edit this file to update rooms, capacities and hourly rates.** Also holds the booking rules (7 working days' notice, 9am–5pm starts, 10am–6pm ends) and the Google Form bridge (form id + `entry.<id>` numbers). The booking page, the rate table on Pricing/Services, and the homepage booking band all read from here.
+
+### Translations (4 files merged at runtime)
 
 - **`src/lib/i18n/translations.ts`** — Base UI strings: nav, hero, services, pricing tiers, contact form labels, footer. ~980 lines.
 - **`src/lib/i18n/page-content.ts`** — Per-page content: hero eyebrows/titles/leads, story paragraphs, value cards, FAQ items. ~700 lines.
 - **`src/lib/i18n/extra-content.ts`** — Things that were hardcoded English before: footer CTA, cookie banner, 404, legal pages (privacy/terms/complaints/disclosures — full HK PDPO-compliant text).
+- **`src/lib/i18n/booking-content.ts`** — Every string on the room-booking page: hero, the 3-step strip, room labels, form fields + hints, validation messages, confirmation screen, policy notices, FAQ.
 
 ### Pages (one component per route)
 
@@ -153,13 +161,15 @@ my-project/
 - **`src/components/pages/why-hk.tsx`** — 6 benefit cards with watermark numbers, teal HK stats band, full-bleed HK image band, dark CTA.
 - **`src/components/pages/pricing.tsx`** — 3 pricing tiers (Starter/Professional/Enterprise) with "Most Popular" highlight, 6 workspace add-ons grid, 6-item FAQ accordion.
 - **`src/components/pages/insights.tsx`** — Featured article (large 2-col card), 5-article grid (cards wrapped in `<a>` for full-card click), newsletter signup card.
+- **`src/components/pages/booking.tsx`** — 🆕 **Room booking page** (`#/book`). Six selectable room cards, a validated booking form with a live price estimate, and a confirmation screen. Submits into the team's existing Google Form (see "Room booking" below). Deep-linkable: `#/book?room=event-space` preselects a room.
+- **`src/components/pages/admin.tsx`** — 🆕 **Staff booking inbox** (`#/admin`). Internal tool: sign in, see bookings grouped by date, Confirm / Decline / Cancel. Not linked from anywhere; protected by row level security, not by being unlisted.
 - **`src/components/pages/contact.tsx`** — Contact info column + working form with honeypot, real error handling, service preselect from URL (`#/contact?service=Serviced+Office`), Google Maps iframe embed.
 - **`src/components/pages/legal.tsx`** — One reusable component for all 4 legal pages (privacy/terms/complaints/disclosures). Takes a `which` prop.
 - **`src/components/pages/not-found.tsx`** — 404 page with big gradient "404", home button, back button.
 
 ### Global UI (every page)
 
-- **`src/components/sections/navbar.tsx`** — Sticky glass nav with scroll shadow. Logo, 6 nav links (active highlighted), language switcher, "Get Started" CTA, mobile Sheet menu.
+- **`src/components/sections/navbar.tsx`** — Sticky glass nav with scroll shadow. Logo, 7 nav links (active highlighted, including "Book a Room"), language switcher, "Book a Room" primary CTA + "Get Started" secondary, mobile Sheet menu.
 - **`src/components/sections/footer.tsx`** — 5-column footer: brand + tagline + TCSP badge / Explore links / Legal links / Connect info. Plus top CTA strip with WhatsApp button.
 - **`src/components/sections/whatsapp-float.tsx`** — Floating green WhatsApp button bottom-right. Pulse animation stops after 3.5s so it's not annoying.
 - **`src/components/sections/back-to-top.tsx`** — Dark floating arrow button bottom-right (above WhatsApp). Appears after scrolling 600px. Smooth-scrolls to top.
@@ -171,16 +181,109 @@ my-project/
 - **`src/components/blocks/page-hero.tsx`** — Image hero with eyebrow pill, large title, optional lead. Used on every subpage. Has `height` prop (sm/md/lg) and `align` prop (left/center).
 - **`src/components/blocks/section-heading.tsx`** — Eyebrow + h2 + optional lead, left or center aligned. Has `dark` prop for use on dark backgrounds.
 - **`src/components/blocks/cta-band.tsx`** — Full-width gradient CTA band with title, lead, button. Teal or dark variant.
+- **`src/components/blocks/room-rates.tsx`** — Rate table for the six bookable rooms (name / capacity / rate), each row deep-linking to `#/book?room=<id>`. Table on desktop, stacked cards on mobile. Used on Pricing and Services. Reads `src/lib/booking-data.ts`.
 
 ### Static assets
 
 - **`public/robots.txt`** — Allows all crawlers, points to sitemap.
-- **`public/sitemap.xml`** — Lists all 11 routes (7 main + 4 legal).
+- **`public/sitemap.xml`** — Lists all 12 routes (8 main + 4 legal).
 - **`public/manifest.json`** — PWA manifest for installability.
 - **`public/favicon*.{ico,png}`** — Favicon set (16/32/48/64).
 - **`public/apple-touch-icon.png`** — 180x180 iOS icon.
 - **`public/icon-{192,512}.png`** — PWA icons.
 - **`public/og-image.png`** — 1200x630 social sharing image (regenerate via `python3 scripts/generate-icons.py`).
+
+---
+
+## 🗓️ Room booking (how it connects to the Google Form)
+
+The booking page at **`#/book`** is a proper on-site booking experience — but it does **not** replace the team's Google Form. It submits *into* it, so every request still lands in the same Google Sheet and triggers the same email notifications as before. Nobody in the office has to change how they work.
+
+### The flow
+
+```
+Visitor picks a room + slot on smarthubc.com/#/book
+        │
+        ├─ validated in the browser (7 working days, 9–5 / 10–6, capacity)
+        │
+        ├─ Supabase: request_booking()  ◀── decides, because it knows
+        │     │                              what everyone else booked
+        │     ├─ refused (slot taken) ─▶ error shown, NOTHING sent to the form
+        │     └─ accepted ─▶ reference SH-2608-4KQ9TW
+        │
+        └─ POST entry.<id>=<value> ──▶ Google Form /formResponse
+                                              │
+                                              └─▶ existing Responses sheet + email alert
+```
+
+Supabase is **optional**. If the env vars are unset, or the database is
+unreachable, the middle step is skipped and the page behaves exactly as it did
+before — a booking in the sheet beats a lost enquiry. Set it up with
+`supabase/schema.sql`; see [`supabase/README.md`](supabase/README.md).
+
+### Staff inbox
+
+With the database running, the office can work at **`#/admin`** instead of in
+the spreadsheet: bookings grouped by date, colour-coded by status, one-click
+Confirm / Decline / Cancel. Declining releases the slot immediately.
+
+The page is not in the navbar, footer or sitemap — but that is convenience, not
+security. Row level security is what protects the data: a stranger who guesses
+the URL and signs up still sees an empty list, because every policy calls
+`is_staff()`.
+
+Creating the first staff login is a two-step job (make the account, then grant
+the staff pass). Walkthrough: [`docs/staff-login.md`](docs/staff-login.md).
+
+### What the website adds on top of the raw form
+
+| | Google Form alone | The `#/book` page |
+|---|---|---|
+| Branding | Google's | Smarthub's, in the site's design |
+| Language | All 3 stacked in every label | Follows the site's EN / 繁 / 简 switcher |
+| Room info | A wall of text to scroll past | Six photo cards with capacity + rate |
+| Price | Visitor works it out | Live estimate as they pick a slot |
+| Bad dates | Accepted, caught later by staff | Blocked before submitting |
+| Over capacity | Accepted, caught later by staff | Blocked before submitting |
+| Deep links | — | `#/book?room=event-space` preselects a room |
+
+The original form is still linked at the bottom of the page for anyone who prefers it.
+
+### Where things live
+
+| What | File |
+|---|---|
+| Rooms, capacities, rates | `src/lib/booking-data.ts` → `ROOMS` |
+| Booking rules (lead time, hours) | `src/lib/booking-data.ts` → `BOOKING_RULES` |
+| Google Form id + entry ids | `src/lib/booking-data.ts` → `GOOGLE_FORM` |
+| All booking page text (3 languages) | `src/lib/i18n/booking-content.ts` |
+| The page itself | `src/components/pages/booking.tsx` |
+| Rate table used on other pages | `src/components/blocks/room-rates.tsx` |
+| Database schema (rooms, rules, RLS) | `supabase/schema.sql` |
+| Database client + error mapping | `src/lib/supabase.ts` |
+| Staff inbox page | `src/components/pages/admin.tsx` |
+| Google Sheet formatter | `supabase/google-sheet-formatter.gs` |
+
+### Changing a rate or a room
+
+Edit `ROOMS` in `src/lib/booking-data.ts`. The booking page, the rate tables on Pricing and Services, and the homepage booking band all update together.
+
+If the database is running, change the matching row in section 3 of `supabase/schema.sql` and re-run the script — it is idempotent, and `supabase/tests/schema.test.mjs` asserts the two stay in sync.
+
+⚠️ Also update the **"Room Information"** description block inside the Google Form itself — that text is maintained in Google and the code can't reach it.
+
+### ⚠️ If the Google Form is ever recreated
+
+A new form means a new id **and** new question ids. To reconnect:
+
+1. Open the new form → **⋮ menu → Get pre-filled link** → fill in dummy answers → **Get link**.
+2. The link contains every `entry.<number>` — copy them into `GOOGLE_FORM.entry` in `src/lib/booking-data.ts`.
+3. Copy the new form id (the long `1FAIpQLS…` part of the URL) into `GOOGLE_FORM.id`, or set `NEXT_PUBLIC_BOOKING_FORM_ID` in Vercel.
+4. Make sure the multiple-choice option text in `ROOMS[].formValue` and `PAYMENT_METHODS[].formValue` matches the new form **character for character** — Google silently discards answers that don't match exactly.
+
+### Known limitation
+
+Google Forms sends no CORS headers, so the browser can't read Google's reply. The submission is fire-and-forget: we know the request left the browser, not that Google accepted it. That's why the confirmation copy promises an email confirmation rather than claiming the room is reserved. If the request fails outright, the page shows a **pre-filled Google Form link** so the visitor finishes in one click without retyping.
 
 ---
 
@@ -219,7 +322,7 @@ python3 scripts/generate-icons.py
 - All extracted to `src/lib/i18n/extra-content.ts`
 
 ### Built 4 legal pages (required for TCSP compliance)
-- Privacy Policy (PDPO-compliant, mentions Formspree US data transfer)
+- Privacy Policy (PDPO-compliant, mentions overseas data transfer)
 - Terms of Use
 - Complaints Procedure (TCSP Code requirement, with Companies Registry escalation)
 - Disclosures (lists all MCM Group entities + licence verification)
@@ -278,7 +381,7 @@ See the table at the top of this README. Summary:
 2. **Replace pricing numbers** with real rate card
 3. **Replace stats** with real numbers (or remove if unverifiable)
 4. **Replace all 40+ Unsplash images** with real Smarthub photos
-5. **Set up Formspree** account and replace `your-form-id` in `contact.tsx` line 56
+5. **Run `supabase/enquiries.sql`** so the contact form stores enquiries (optionally `supabase/notify-email.sql` for email alerts)
 6. **Set up newsletter provider** (Mailchimp / ConvertKit / Loops) and wire up `insights.tsx`
 7. **Write 3+ real Insights articles** (or remove the page until you have them)
 8. **Point `smarthubc.com`** at the Vercel project

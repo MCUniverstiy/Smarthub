@@ -24,7 +24,7 @@ Make sure you have these accounts (all free):
 
 - [ ] **GitHub account** — https://github.com/signup
 - [ ] **Vercel account** — https://vercel.com/signup (sign up WITH your GitHub account — it links them automatically)
-- [ ] **Formspree account** (for the contact form) — https://formspree.io (free tier = 50 submissions/month)
+- [ ] **Supabase account** (bookings + contact enquiries) — https://supabase.com (free tier is plenty)
 - [ ] **Git installed on your computer** — check by running `git --version` in terminal. If not installed: https://git-scm.com/downloads
 
 ---
@@ -38,7 +38,7 @@ I've already cleaned up the project for deployment. Here's what was changed:
 | Removed `output: "standalone"` from `next.config.ts` | Vercel handles builds natively — standalone mode is for custom servers |
 | Fixed `build` script in `package.json` (was copying files to standalone folder) | Vercel runs `next build` directly |
 | Added `postinstall: "prisma generate"` to `package.json` | So the Prisma client builds correctly on Vercel |
-| Made Formspree endpoint use env var `NEXT_PUBLIC_FORMSPREE_ENDPOINT` | So you don't hardcode secrets in code |
+| Contact form writes to Supabase; the Formspree relay is optional | Formspree's free tier is 50 submissions/month, too low to depend on |
 | Created `.env.example` with all needed env vars | Template for what env vars you need to set |
 | Updated `.gitignore` to exclude junk (logs, screenshots, .zscripts, etc.) | So you don't pollute GitHub with sandbox files |
 
@@ -109,14 +109,16 @@ git push
 
    | Name | Value | Environments |
    |---|---|---|
-   | `NEXT_PUBLIC_FORMSPREE_ENDPOINT` | `https://formspree.io/f/YOUR_REAL_FORM_ID` | Production, Preview, Development |
+   | `NEXT_PUBLIC_SUPABASE_URL` | `https://YOUR-REF.supabase.co` | Production, Preview, Development |
+   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_...` | Production, Preview, Development |
 
-   To get your Formspree endpoint:
-   - Sign up at https://formspree.io
-   - Click **New Project** → name it "Smarthub Connect"
-   - Click **New Form** → name it "Contact Form"
-   - They'll give you an endpoint URL like `https://formspree.io/f/abcdwxyz`
-   - Copy that and paste it as the value above
+   Where to find both: [`docs/supabase-keys.md`](docs/supabase-keys.md).
+   Never paste a `sb_secret_...` or `service_role` key here — those bypass
+   all security rules and `NEXT_PUBLIC_` ships them to every visitor.
+
+   There is **no Formspree variable to set.** The contact form writes to
+   Supabase and the enquiries show up at `#/admin`. `NEXT_PUBLIC_FORMSPREE_ENDPOINT`
+   exists but is optional and can stay empty.
 
 5. Click **Deploy**. Vercel will build the site (takes 1–2 minutes).
 6. When done, you'll see a success page with a temporary URL like `smarthub-connect-abc123.vercel.app`. Click it to view your live site.
@@ -149,14 +151,23 @@ Right now your site lives at `smarthub-connect-abc123.vercel.app`. To make it li
 
 ---
 
-## Step 5: Set Up Formspree (so the contact form actually works)
+## Step 5: Set Up the Database (bookings + contact form)
 
-1. (You already did this in Step 3 if you added the env var)
-2. In Formspree, go to your form → **Submissions** tab
-3. This is where all contact form submissions will appear
-4. Optional: add your email under **Notifications** so you get an email when someone submits the form
+1. Supabase dashboard → **SQL Editor** → **New query**
+2. Paste all of `supabase/schema.sql` → **Run** (this is the room booking system)
+3. New query → paste all of `supabase/enquiries.sql` → **Run** (this is the contact form)
+4. New query → paste all of `supabase/deletes.sql` → **Run** (lets you delete
+   bookings and enquiries from `#/admin`, with an undo)
+5. Create your staff login so you can read them — full walkthrough in
+   [`docs/staff-login.md`](docs/staff-login.md)
 
-**Test it:** Go to your live site, fill in the contact form, submit. You should see the submission appear in Formspree within seconds.
+**Test it:** Go to your live site, fill in the contact form, submit. Then open
+`https://yourdomain.com/#/admin`, sign in, and click the **Enquiries** tab. Your
+test message should be there.
+
+**Optional — get an email when one arrives:** run
+[`supabase/notify-email.sql`](supabase/notify-email.sql). Without it, enquiries
+are stored safely but nothing pings you, so someone has to check `#/admin`.
 
 ---
 
@@ -196,18 +207,27 @@ Vercel also creates a **preview URL** for every push (before merging to main). Y
 ### Build fails on Vercel
 - Check the **Build Logs** in Vercel (click your deployment → Logs)
 - Common causes:
-  - Missing env var (did you set `NEXT_PUBLIC_FORMSPREE_ENDPOINT`?)
   - TypeScript error (run `bun run lint` locally to check)
-  - Prisma error (the `postinstall: prisma generate` script should handle this)
+  - `lockfile had changes, but lockfile is frozen` — `package.json` and
+    `bun.lock` disagree. Run `bun install` locally and commit the updated
+    `bun.lock`.
 
 ### Images not loading
 - The site uses Unsplash images. If they don't load, check that `images.unsplash.com` is in `next.config.ts → images.remotePatterns` (it is)
 - When you replace them with real photos, add your image CDN domain to `remotePatterns`
 
 ### Contact form shows error
-- You haven't set `NEXT_PUBLIC_FORMSPREE_ENDPOINT` in Vercel env vars
-- Or the Formspree endpoint is wrong
-- Or Formspree is down (rare)
+The form only shows an error when **nothing** stored the enquiry.
+- Have you run `supabase/schema.sql` **and** `supabase/enquiries.sql` in the
+  Supabase SQL editor? The second one creates the enquiries table.
+- Are `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+  set in Vercel — and did you **redeploy** after adding them? Env vars only
+  take effect on the next build.
+- Check the browser console for the actual error.
+
+### Enquiries arrive but nobody notices them
+They are in `#/admin` → **Enquiries**. To get an email alert as well, run
+[`supabase/notify-email.sql`](supabase/notify-email.sql).
 
 ### Domain not working
 - DNS hasn't propagated yet (can take up to 24 hours, usually 5-30 min)
@@ -228,7 +248,8 @@ Vercel also creates a **preview URL** for every push (before merging to main). Y
 | Source code | This project folder → GitHub repo |
 | Live website | Vercel (auto-deployed from GitHub) |
 | Custom domain | Your domain registrar (DNS points to Vercel) |
-| Contact form submissions | Formspree dashboard |
+| Contact form enquiries | Supabase → `#/admin` → Enquiries tab |
+| Room bookings | Supabase → `#/admin` → Bookings tab, and the Google Sheet |
 | Environment variables | Vercel → Settings → Environment Variables |
 | Build logs | Vercel → your deployment → Logs |
 | Analytics (optional) | Plausible dashboard |
@@ -239,7 +260,7 @@ Vercel also creates a **preview URL** for every push (before merging to main). Y
 
 - **Vercel docs**: https://vercel.com/docs/getting-started
 - **GitHub docs**: https://docs.github.com/en
-- **Formspree docs**: https://help.formspree.io
+- **Supabase docs**: https://supabase.com/docs
 - **Next.js deployment guide**: https://nextjs.org/docs/app/building-your-application/deploying
 
 You've got this. The site is ready — just follow the steps above.

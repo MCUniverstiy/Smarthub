@@ -24,7 +24,8 @@ When you add a feature that needs external configuration:
 # Database (already exists)
 DATABASE_URL=file:/home/z/my-project/db/custom.db
 
-# Formspree (when you set up the contact form for real)
+# Optional email relay for the contact form — safe to leave blank.
+# Enquiries are saved to Supabase and read at #/admin regardless.
 FORMSPREE_ENDPOINT=https://formspree.io/f/your-real-id
 
 # Analytics (when you add Plausible/Vercel Analytics)

@@ -10,7 +10,7 @@
  *   swaps content based on the hash (e.g. `#/about`, `#/pricing`).
  *
  * WHAT IT DOES:
- *   - Defines a `Route` type union (the 12 possible routes)
+ *   - Defines a `Route` type union (the 14 possible routes)
  *   - Maintains two lookup tables: URL-string ↔ Route-name
  *   - Exposes `RouterProvider` to hold the current route state
  *   - Listens for `hashchange` events so back/forward buttons work
@@ -45,7 +45,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
  * Route — the closed set of possible route names.
  *
  * This is a TypeScript "union type" — it says `route` must be one of
- * these 12 literal strings, nothing else. The compiler will catch
+ * these 13 literal strings, nothing else. The compiler will catch
  * typos like `navigate("abuot")` at build time.
  *
  * The "not-found" route is what we set when the URL hash doesn't
@@ -58,11 +58,13 @@ export type Route =
   | "why-hk"
   | "pricing"
   | "insights"
+  | "book"
   | "contact"
   | "privacy"
   | "terms"
   | "complaints"
   | "disclosures"
+  | "admin"
   | "not-found";
 
 /**
@@ -80,11 +82,13 @@ const ROUTE_MAP: Record<string, Route> = {
   "/why-hong-kong": "why-hk",
   "/pricing": "pricing",
   "/insights": "insights",
+  "/book": "book",
   "/contact": "contact",
   "/privacy": "privacy",
   "/terms": "terms",
   "/complaints": "complaints",
   "/disclosures": "disclosures",
+  "/admin": "admin",
 };
 
 /**
@@ -99,11 +103,13 @@ const REVERSE_MAP: Record<Route, string> = {
   "why-hk": "/why-hong-kong",
   pricing: "/pricing",
   insights: "/insights",
+  book: "/book",
   contact: "/contact",
   privacy: "/privacy",
   terms: "/terms",
   complaints: "/complaints",
   disclosures: "/disclosures",
+  admin: "/admin",
   "not-found": "/not-found",
 };
 
@@ -115,16 +121,22 @@ const REVERSE_MAP: Record<Route, string> = {
  *   2. Grab `window.location.hash` (e.g. "#/about") and strip the
  *      leading `#`. Result: "/about".
  *   3. Strip a leading slash if present. Result: "about".
- *   4. Take only the FIRST path segment (ignore deep links).
- *   5. Look up the segment in ROUTE_MAP. If found, return it;
+ *   4. Drop any query string. `#/book?room=meeting-a` and
+ *      `#/contact?service=Workspace` must still resolve to the "book" /
+ *      "contact" routes — the pages themselves read the query string via
+ *      `hashQuery()` below.
+ *   5. Take only the FIRST path segment (ignore deep links).
+ *   6. Look up the segment in ROUTE_MAP. If found, return it;
  *      otherwise return "not-found".
  *
  * Inputs: none (reads from `window.location.hash`)
- * Returns: a `Route` value (one of the 12 literals above)
+ * Returns: a `Route` value (one of the 14 literals above)
  */
 function parseHash(): Route {
   if (typeof window === "undefined") return "home";
-  const raw = window.location.hash.replace(/^#/, "");
+  // Strip the leading "#" and everything from "?" onwards (the query
+  // string) so deep-links with parameters still match a route.
+  const raw = window.location.hash.replace(/^#/, "").split("?")[0];
   // strip leading slash
   const path = raw.startsWith("/") ? raw.slice(1) : raw;
   // take first segment only
@@ -137,11 +149,12 @@ function parseHash(): Route {
  * RouterContextValue — the shape of the context value every consumer
  * receives when calling `useRouter()`.
  *   - `route`     : the current Route name
- *   - `navigate`  : a function to change the route
+ *   - `navigate`  : a function to change the route (with optional query)
  */
 type RouterContextValue = {
   route: Route;
-  navigate: (r: Route) => void;
+  /** Change route. Pass `query` to append a hash query string. */
+  navigate: (r: Route, query?: Record<string, string>) => void;
 };
 
 /**
@@ -213,9 +226,20 @@ export function RouterProvider({ children }: { children: React.ReactNode }) {
    * don't call `setRoute` directly here so the URL is always the
    * single source of truth.
    */
-  const navigate = useCallback((r: Route) => {
+  const navigate = useCallback((r: Route, query?: Record<string, string>) => {
     if (typeof window === "undefined") return;
-    window.location.hash = `#${REVERSE_MAP[r]}`;
+    // Optional query string, e.g. navigate("book", { room: "meeting-a" })
+    // produces "#/book?room=meeting-a". Pages read it with `hashQuery()`.
+    const qs = query ? new URLSearchParams(query).toString() : "";
+    const next = `#${REVERSE_MAP[r]}${qs ? `?${qs}` : ""}`;
+    // Setting an identical hash does NOT fire `hashchange`, so update the
+    // state directly in that case (e.g. re-clicking the current nav link).
+    if (window.location.hash === next) {
+      setRoute(parseHash());
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    window.location.hash = next;
     // state update will happen via hashchange listener
   }, []);
 
@@ -252,9 +276,38 @@ export function useRouter() {
  * styled as a link).
  */
 /** Helper to build a hash href for a route */
-export function routeHref(r: Route, anchor?: string): string {
-  const base = `#${REVERSE_MAP[r]}`;
+export function routeHref(
+  r: Route,
+  anchor?: string,
+  query?: Record<string, string>
+): string {
+  const qs = query ? new URLSearchParams(query).toString() : "";
+  const base = `#${REVERSE_MAP[r]}${qs ? `?${qs}` : ""}`;
   return anchor ? `${base}#${anchor}` : base;
+}
+
+/**
+ * hashQuery — read the query string of the CURRENT hash URL.
+ *
+ * Our router keeps everything after `#`, so a deep link looks like
+ * `https://smarthubc.com/#/book?room=event-space`. `URLSearchParams`
+ * can't see that (it's not the real `location.search`), so we slice the
+ * hash ourselves.
+ *
+ * Inputs: none (reads `window.location.hash`)
+ * Returns: `URLSearchParams` — empty on the server or when there's no
+ * query string, so callers can always call `.get()` safely.
+ *
+ * Example:
+ *   const room = hashQuery().get("room"); // "event-space" | null
+ */
+export function hashQuery(): URLSearchParams {
+  if (typeof window === "undefined") return new URLSearchParams();
+  const hash = window.location.hash;
+  const qIndex = hash.indexOf("?");
+  if (qIndex === -1) return new URLSearchParams();
+  // Stop at a secondary anchor (e.g. "#/book?room=x#form") if present.
+  return new URLSearchParams(hash.slice(qIndex + 1).split("#")[0]);
 }
 
 /**
@@ -277,6 +330,8 @@ export function routeHref(r: Route, anchor?: string): string {
  * Props:
  *   - `to`       — required Route name
  *   - `anchor?`  — optional secondary anchor (e.g. "team")
+ *   - `query?`   — optional hash query params, e.g. `{ room: "meeting-a" }`
+ *                  which renders `#/book?room=meeting-a`
  *   - `className?`, `children`, `onClick?` — standard anchor props
  *   - `...rest`  — any other valid <a> attributes except `href`
  *                  (which is computed) and `onClick` (handled here)
@@ -285,6 +340,7 @@ export function routeHref(r: Route, anchor?: string): string {
 export function RouterLink({
   to,
   anchor,
+  query,
   className,
   children,
   onClick,
@@ -292,6 +348,7 @@ export function RouterLink({
 }: {
   to: Route;
   anchor?: string;
+  query?: Record<string, string>;
   className?: string;
   children: React.ReactNode;
   onClick?: () => void;
@@ -299,13 +356,13 @@ export function RouterLink({
   const { navigate } = useRouter();
   return (
     <a
-      href={routeHref(to, anchor)}
+      href={routeHref(to, anchor, query)}
       className={className}
       onClick={(e) => {
         // allow cmd+click to open in new tab
         if (e.metaKey || e.ctrlKey || e.shiftKey) return;
         e.preventDefault();
-        navigate(to);
+        navigate(to, query);
         onClick?.();
       }}
       {...rest}

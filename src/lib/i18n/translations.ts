@@ -110,7 +110,7 @@ export const translations = {
     topbar: {
       phone: "+852 2383 3283",
       whatsapp: "WhatsApp 5501 3516",
-      email: "hello@smarthubc.com",
+      email: "info@smarthubc.com",
       licence: "TCSP Licensed · TC010264",
     },
     // hero — homepage hero section: eyebrow tag, big headline (split
@@ -448,6 +448,7 @@ export const translations = {
         terms: "Terms of Use",
         complaints: "Complaints Procedure",
         disclosures: "Disclosures",
+        inbox: "Booking inbox",
       },
       note:
         "Smarthub Connect Limited is a Hong Kong Trust & Company Service Provider licensee (TC010264) and a member of the MCM Group of companies. This website is for informational purposes only and does not constitute an offer or solicitation in any jurisdiction where such would be unlawful.",
@@ -480,7 +481,7 @@ export const translations = {
     topbar: {
       phone: "+852 2383 3283",
       whatsapp: "WhatsApp 5501 3516",
-      email: "hello@smarthubc.com",
+      email: "info@smarthubc.com",
       licence: "TCSP 持牌 · TC010264",
     },
     hero: {
@@ -773,6 +774,7 @@ export const translations = {
         terms: "使用條款",
         complaints: "投訴程序",
         disclosures: "披露",
+        inbox: "預訂管理",
       },
       note:
         "Smarthub Connect Limited 為香港持牌信託及公司服務供應商 (TC010264)，並為 MCM Group 集團成員。本網站僅供參考，不構成於任何不允許之司法管轄區的要約或招攬。",
@@ -805,7 +807,7 @@ export const translations = {
     topbar: {
       phone: "+852 2383 3283",
       whatsapp: "WhatsApp 5501 3516",
-      email: "hello@smarthubc.com",
+      email: "info@smarthubc.com",
       licence: "TCSP 持牌 · TC010264",
     },
     hero: {
@@ -1098,6 +1100,7 @@ export const translations = {
         terms: "使用条款",
         complaints: "投诉程序",
         disclosures: "披露",
+        inbox: "预订管理",
       },
       note:
         "Smarthub Connect Limited 为香港持牌信托及公司服务供应商 (TC010264)，并为 MCM Group 集团成员。本网站仅供参考，不构成于任何不允许之司法管辖区的要约或招揽。",

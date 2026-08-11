@@ -27,9 +27,10 @@
  */
 
 import { useLang } from "@/lib/i18n/lang-context";
-import { Phone, Mail, MessageCircle, MapPin, ShieldCheck } from "lucide-react";
+import { Phone, Mail, MessageCircle, MapPin, ShieldCheck, CalendarDays } from "lucide-react";
 import { RouterLink, Route } from "@/lib/router";
 import { companyFacts } from "@/lib/site-data";
+import { useIsStaff } from "@/hooks/use-staff";
 
 /**
  * Footer — the bottom-of-page footer component.
@@ -44,7 +45,15 @@ export function Footer() {
   const { t } = useLang();
 
   /**
-   * "Explore" links — the 6 main site pages. Each item pairs a `Route`
+   * True only when a signed-in member of the team is browsing. Used to
+   * reveal the booking-inbox shortcut below. This is presentation only:
+   * the inbox itself is protected by row level security, so forcing this
+   * value true in devtools reveals a link and nothing else.
+   */
+  const isStaff = useIsStaff();
+
+  /**
+   * "Explore" links — the 7 main site pages (including room booking). Each item pairs a `Route`
    * (used by RouterLink for navigation) with a translated `label`.
    * Declared inside the component so labels re-render on language change.
    */
@@ -53,8 +62,14 @@ export function Footer() {
     { to: "services", label: t.footer.links.services },
     { to: "why-hk", label: t.footer.links.whyhk },
     { to: "pricing", label: t.footer.links.pricing },
+    { to: "book", label: t.booking.navLabel },
     { to: "insights", label: t.footer.links.insights },
     { to: "contact", label: t.footer.links.contact },
+    // Staff-only shortcut. Absent for every public visitor, and absent
+    // entirely when the site runs without a database.
+    ...(isStaff
+      ? [{ to: "admin" as Route, label: t.footer.links.inbox }]
+      : []),
   ];
 
   /**
@@ -96,15 +111,26 @@ export function Footer() {
           </div>
           {/* Right: gradient WhatsApp button — uses companyFacts.whatsappUrl
               so the number lives in one place (site-data.ts). */}
-          <a
-            href={companyFacts.whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-500/25 transition hover:from-teal-400 hover:to-emerald-400 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-950"
-          >
-            <MessageCircle className="h-4 w-4" />
-            {t.footer.ctaButton}
-          </a>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {/* Room booking — the self-service path, so it leads. */}
+            <RouterLink
+              to="book"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-500/25 transition hover:from-teal-400 hover:to-emerald-400 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-950"
+            >
+              <CalendarDays className="h-4 w-4" />
+              {t.booking.ctaShort}
+            </RouterLink>
+            {/* WhatsApp — for anything that needs a human. */}
+            <a
+              href={companyFacts.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-950"
+            >
+              <MessageCircle className="h-4 w-4" />
+              {t.footer.ctaButton}
+            </a>
+          </div>
         </div>
       </div>
 
