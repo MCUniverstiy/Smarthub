@@ -36,9 +36,21 @@ nothing else.
 
 ## Key Concepts
 
+### Two names for the same key
+
+Supabase renamed the public key in 2025. Older projects have an `anon` key (a
+long `eyJ...` JWT); projects created from November 2025 onwards only get a
+`sb_publishable_...` key. They are functionally identical — both low-privilege,
+both safe in the browser, both gated by RLS.
+
+So the client reads `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` first and falls back
+to `NEXT_PUBLIC_SUPABASE_ANON_KEY`, rather than making the user work out which
+era their project belongs to. The legacy key is scheduled for removal at the
+end of 2026, hence the ordering.
+
 ### It is optional on purpose
 
-If `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` are missing,
+If the URL or both key variables are missing,
 every function reports "unconfigured" and the booking page silently falls back
 to the Google Form. The site never breaks because a database has not been set
 up. This means the code can ship before the SQL has been run, and be switched

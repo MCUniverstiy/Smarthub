@@ -35,7 +35,7 @@ These items require the boss's input or external service setup. None of them can
 | **Verify room rates** | `src/lib/booking-data.ts` → `ROOMS` | Copied from the live Google Form — confirm they're current, and keep the form's own "Room Information" text in sync |
 | **Real room photos** | `src/lib/booking-data.ts` → `ROOMS[].image` | Unsplash stock photos |
 | **Run the booking database** | Paste `supabase/schema.sql` into the Supabase SQL editor | Not run yet — without it the site still works, but the Google Form cannot prevent double bookings |
-| **Supabase env vars** | `.env.local` + Vercel → `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Unset (booking falls back to Google Form only) |
+| **Supabase env vars** | `.env.local` + Vercel — where to find the keys: [`docs/supabase-keys.md`](docs/supabase-keys.md) | Unset (booking falls back to Google Form only) |
 | **Create a staff login** | Supabase → Authentication → Users, then `insert into public.staff` — step-by-step in [`docs/staff-login.md`](docs/staff-login.md) | None yet — `#/admin` shows "no access" until one exists |
 | **Real Formspree ID** | `src/components/pages/contact.tsx` line 56 | `your-form-id` |
 | **Real newsletter provider** | `src/components/pages/insights.tsx` → `onSubscribe` | Just flips button label |

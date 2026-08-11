@@ -71,18 +71,26 @@ Add these to `.env.local` and to Vercel's environment variables:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<the anon / public key>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-Both are in Supabase under **Project Settings → API**.
+Both are in Supabase under **Project Settings → API Keys**. Step-by-step, with
+screenshots of which key is which: [`docs/supabase-keys.md`](../docs/supabase-keys.md).
 
-The anon key is public — it ships inside the JavaScript bundle. That is fine
-and expected, *because* of the row-level security in section 8: with that key
-you can create a pending booking and read the room list, and nothing else. You
+Older projects have an `anon` key (a long `eyJ...` JWT) instead of a
+publishable key. Either works — set `NEXT_PUBLIC_SUPABASE_ANON_KEY` in that
+case. Supabase is removing the legacy `anon` key at the end of 2026.
+
+This key is public — it ships inside the JavaScript bundle. That is fine and
+expected, *because* of the row-level security in section 8: with that key you
+can create a pending booking and read the room list, and nothing else. You
 cannot list bookings, read a customer's email, or confirm your own booking.
 
-There is a third key, the **service role** key, which bypasses all security.
-Never put it in a `NEXT_PUBLIC_` variable. It is only for server-side code.
+There is a third key — **secret** (`sb_secret_...`), or **service_role** on
+older projects — which bypasses all security. It is hidden until you click
+"Reveal", which is a good rule of thumb: if you had to reveal it, it does not
+belong in this website. Never put it in a `NEXT_PUBLIC_` variable. This site
+does not need it at all.
 
 ---
 

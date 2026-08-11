@@ -33,14 +33,40 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { BookingSubmission } from "./booking-data";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+/**
+ * The public key, under either of the two names Supabase uses.
+ *
+ * Supabase renamed this key in 2025. Projects created before then have an
+ * "anon" key (a long JWT starting `eyJ...`); projects created from
+ * November 2025 onwards only get a "publishable" key (a short opaque
+ * token starting `sb_publishable_...`). They behave identically — both
+ * are low-privilege, both are safe to ship in the browser, and both are
+ * gated entirely by row level security — so we accept whichever is set
+ * rather than forcing you to know which era your project belongs to.
+ *
+ * The legacy `anon` key is scheduled for removal at the end of 2026, so
+ * PUBLISHABLE_KEY is checked first and is the one to prefer for new
+ * setups.
+ */
+const publicKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 /**
  * True when both env vars are present, so the app can decide whether to
  * use the database at all. Checked before every call below.
+ *
+ * The placeholder values from `.env.example` are rejected too, so a
+ * half-finished setup does not count as configured — otherwise the site
+ * would try to reach `your-project-ref.supabase.co` and fail confusingly
+ * instead of falling back to the Google Form.
  */
 export const isSupabaseConfigured = Boolean(
-  url && anonKey && !url.includes("your-project-ref")
+  url &&
+    publicKey &&
+    !url.includes("your-project-ref") &&
+    !publicKey.startsWith("your-")
 );
 
 /**
@@ -53,7 +79,7 @@ export const isSupabaseConfigured = Boolean(
  * session — nothing is stored for them.
  */
 export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(url!, anonKey!, {
+  ? createClient(url!, publicKey!, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
