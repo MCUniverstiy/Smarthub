@@ -23,6 +23,8 @@ Built with Next.js 16 + TypeScript + Tailwind CSS 4 + shadcn/ui. Design inspired
 
 These items require the boss's input or external service setup. None of them can be done from code alone.
 
+A full pre-merge audit — what was security-tested, what is safe, and what still needs a human decision — is in [`docs/pre-merge-audit.md`](docs/pre-merge-audit.md).
+
 | Item | Where to update | Current placeholder |
 |---|---|---|
 | **Real TCSP licence number** | `src/lib/site-data.ts` → `tcspLicence` | `TC010264` (verify on [cr.gov.hk](https://www.cr.gov.hk)) |
