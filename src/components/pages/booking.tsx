@@ -78,7 +78,6 @@ import {
   buildPrefillUrl,
   earliestBookingDate,
   estimateCost,
-  formatHKD,
   formatTime12,
   getRoom,
   googleFormViewUrl,
@@ -631,9 +630,7 @@ export function BookingPage() {
                     PAYMENT_METHODS.find((p) => p.id === submitted.payment)?.label[lang] ?? "—"
                   }
                 />
-                {cost && (
-                  <SummaryRow label={b.summaryEstimate} value={formatHKD(cost.total)} />
-                )}
+                <SummaryRow label="Availability" value="Our team will confirm availability and terms." />
               </dl>
             </div>
 
@@ -1028,8 +1025,7 @@ export function BookingPage() {
                       <SelectContent>
                         {ROOMS.map((room) => (
                           <SelectItem key={room.id} value={room.id}>
-                            {room.emoji} {room.name[lang]} · {formatHKD(room.rate)}
-                            {room.unit === "hour" ? b.perHour : b.perDay}
+                            {room.emoji} {room.name[lang]}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1202,13 +1198,8 @@ export function BookingPage() {
                         }
                       />
                       <SummaryRow label={b.summaryAttendees} value={form.attendees || "—"} />
-                      <div className="flex items-baseline justify-between gap-4 bg-teal-50/50 px-6 py-4">
-                        <dt className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                          {b.summaryEstimate}
-                        </dt>
-                        <dd className="font-display text-2xl font-bold text-teal-700">
-                          {estimate ? formatHKD(estimate.total) : "—"}
-                        </dd>
+                      <div className="bg-teal-50/50 px-6 py-4 text-sm font-semibold text-teal-800">
+                        Final availability and booking terms will be confirmed by our team.
                       </div>
                     </dl>
                   )}
