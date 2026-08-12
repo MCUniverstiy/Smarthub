@@ -172,6 +172,7 @@ function fill(template: string, values: Record<string, string | number>): string
 export function BookingPage() {
   const { t, lang } = useLang();
   const b = t.booking;
+  const [selectedOfficeLocation, setSelectedOfficeLocation] = useState("Hong Kong");
 
   // Lazy initialiser: seed the form from the URL so `#/book?room=event-space`
   // opens with that room preselected. Reading the hash here (rather than in
@@ -697,18 +698,18 @@ export function BookingPage() {
 
       {/* Global locations come first. The Hong Kong room catalogue below remains
           the local booking experience. */}
-      <GlobalOfficeDirectory />
+      <GlobalOfficeDirectory onLocationChange={setSelectedOfficeLocation} />
 
       {/* ===== HONG KONG ROOM CATALOGUE ===== */}
       {/* Six selectable cards. Clicking one sets `form.roomId`, updates the
           URL (`?room=...`) and scrolls to the form. The selected card gets
           a teal ring so the choice stays visible while scrolling. */}
-      <section className="bg-gradient-to-b from-white via-teal-50/30 to-white py-20 lg:py-24">
+      {selectedOfficeLocation === "Hong Kong" && <section className="bg-gradient-to-b from-white via-teal-50/30 to-white py-20 lg:py-24">
         <div className="mx-auto max-w-7xl px-6">
           <SectionHeading
-            eyebrow={b.roomsEyebrow}
-            title={b.roomsTitle}
-            lead={b.roomsLead}
+            eyebrow="Hong Kong offices"
+            title="Available Spaces"
+            lead="Six rooms. One Wan Chai address. Select a room to request a booking."
             align="center"
           />
 
@@ -734,10 +735,6 @@ export function BookingPage() {
                       className="object-cover transition duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/45 to-transparent" />
-                    <span className="absolute right-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-teal-700 shadow-sm backdrop-blur">
-                      {formatHKD(room.rate)}
-                      {room.unit === "hour" ? b.perHour : b.perDay}
-                    </span>
                     {isSelected && (
                       <span className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full bg-teal-600 px-3 py-1 text-xs font-bold text-white shadow-sm">
                         <CheckCircle2 className="h-3 w-3" />
@@ -777,7 +774,7 @@ export function BookingPage() {
             })}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* ===== BOOKING FORM + LIVE SUMMARY ===== */}
       <section ref={formRef} id="booking-form" className="scroll-mt-24 bg-white py-20 lg:py-24">
