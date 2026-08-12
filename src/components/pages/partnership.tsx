@@ -43,6 +43,17 @@ interface GlobalOffice {
 // Sample global SFO offices (in real life loaded from admin / DB)
 const SAMPLE_GLOBAL_OFFICES: GlobalOffice[] = [
   {
+    id: "hk-wc-1",
+    name: "Wan Chai SmartHub Business Centre",
+    country: "Hong Kong",
+    city: "Wan Chai",
+    description: "Professional meeting and private office space in Wan Chai, with reception support and flexible booking for visiting teams.",
+    capacity: 10,
+    rate: 500,
+    unit: "hour",
+    features: ["Meeting rooms", "Reception", "High-speed internet", "Central location"],
+  },
+  {
     id: "sg-sfo-1",
     name: "Singapore Central SFO",
     country: "Singapore",
@@ -91,6 +102,7 @@ export function PartnershipPage() {
   });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [submittedRef, setSubmittedRef] = useState<string>("");
+  const [selectedRegion, setSelectedRegion] = useState("All locations");
 
   // Offices (merged sample + any created via admin later – for demo we use sample)
   const [globalOffices, setGlobalOffices] = useState<GlobalOffice[]>(SAMPLE_GLOBAL_OFFICES);
@@ -156,6 +168,11 @@ export function PartnershipPage() {
     }
   };
 
+  const regions = ["All locations", ...Array.from(new Set(globalOffices.map((office) => office.country)))];
+  const visibleOffices = selectedRegion === "All locations"
+    ? globalOffices
+    : globalOffices.filter((office) => office.country === selectedRegion);
+
   return (
     <>
       <PageHero
@@ -204,13 +221,20 @@ export function PartnershipPage() {
         <div className="mx-auto max-w-7xl px-6">
           <SectionHeading
             eyebrow="Live Global SFO Network"
-            title="Book premium offices around the world"
-            lead="These partner locations are already live. More offices are added daily by our partners and through the admin dashboard."
+            title="Find office space by location"
+            lead="Choose a country or region, then browse the offices available in that location. Submit a booking request and our local team will confirm availability."
             align="center"
           />
 
-          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {globalOffices.map((office) => (
+          <div className="mt-8 flex flex-wrap justify-center gap-2">
+            {regions.map((region) => (
+              <button key={region} type="button" onClick={() => setSelectedRegion(region)} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${selectedRegion === region ? "bg-[#148f8a] text-white" : "bg-white text-[#4a5e5d] ring-1 ring-[#cdd9d8] hover:bg-[#e2f7f5]"}`}>
+                {region}
+              </button>
+            ))}
+          </div>
+          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {visibleOffices.map((office) => (
               <div key={office.id} className="group flex flex-col overflow-hidden rounded-3xl border bg-white shadow-sm hover:shadow-xl transition">
                 <div className="relative h-48 bg-gradient-to-br from-teal-900/90 to-slate-900 flex items-center justify-center">
                   <div className="text-center text-white">
@@ -218,8 +242,8 @@ export function PartnershipPage() {
                     <div className="font-display text-xl font-bold">{office.city}</div>
                     <div className="text-sm opacity-80">{office.country}</div>
                   </div>
-                  <div className="absolute top-4 right-4 bg-white/90 text-teal-800 px-3 py-1 rounded-full text-xs font-bold">
-                    {office.unit === "hour" ? `HK$${office.rate}/hr` : `HK$${office.rate}/day`}
+                  <div className="absolute top-4 right-4 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-[#148f8a]">
+                    Available on request
                   </div>
                 </div>
 

@@ -46,6 +46,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatHKD } from "@/lib/booking-data";
+import { getManagedGlobalListings, removeGlobalListing, saveGlobalListing } from "@/lib/global-office";
 import {
   BOOKING_STATUSES,
   ENQUIRY_STATUSES,
@@ -167,13 +168,7 @@ export function AdminPage() {
     features: string[];
   };
 
-  const [globalOffices, setGlobalOffices] = useState<GlobalOffice[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const saved = localStorage.getItem("smarthub-global-offices");
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [globalOffices, setGlobalOffices] = useState<GlobalOffice[]>([]);
 
   const [newOffice, setNewOffice] = useState<Partial<GlobalOffice>>({
     name: "",
@@ -188,12 +183,14 @@ export function AdminPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const saveGlobalOffices = (offices: GlobalOffice[]) => {
-    setGlobalOffices(offices);
-    try { localStorage.setItem("smarthub-global-offices", JSON.stringify(offices)); } catch {}
-  };
+  const loadGlobalOffices = useCallback(async () => {
+    const rows = await getManagedGlobalListings();
+    setGlobalOffices(rows.map((row) => ({ id: row.id, name: row.name, country: row.country, city: row.city, description: row.description_html, capacity: row.capacity, rate: Number(row.rate), unit: row.rate_unit, features: row.amenities || [] })));
+  }, []);
 
-  const addOrUpdateOffice = () => {
+  useEffect(() => { void loadGlobalOffices(); }, [loadGlobalOffices]);
+
+  const addOrUpdateOffice = async () => {
     if (!newOffice.name || !newOffice.city || !newOffice.description) {
       alert("Name, city and description are required.");
       return;
@@ -211,13 +208,13 @@ export function AdminPage() {
       features: Array.isArray(newOffice.features) ? newOffice.features : ["Private boardroom", "24/7 access"],
     };
 
-    let updated: GlobalOffice[];
-    if (editingId) {
-      updated = globalOffices.map(o => o.id === editingId ? office : o);
-    } else {
-      updated = [...globalOffices, office];
-    }
-    saveGlobalOffices(updated);
+    const saved = await saveGlobalListing({
+      id: editingId || undefined, name: office.name, country: office.country, city: office.city,
+      description_html: office.description, capacity: office.capacity, rate: office.rate,
+      rate_unit: office.unit, amenities: office.features,
+    });
+    if (!saved.ok) { alert(saved.message || "Could not save the listing. Run the global-office SQL migration first."); return; }
+    await loadGlobalOffices();
     setEditingId(null);
     setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, rate: 450, unit: "hour", features: ["Private boardroom", "24/7 access"] });
   };
@@ -227,10 +224,11 @@ export function AdminPage() {
     setNewOffice({ ...office });
   };
 
-  const deleteOffice = (id: string) => {
+  const deleteOffice = async (id: string) => {
     if (!confirm("Delete this global office listing?")) return;
-    const updated = globalOffices.filter(o => o.id !== id);
-    saveGlobalOffices(updated);
+    const result = await removeGlobalListing(id);
+    if (!result.ok) { alert(result.message || "Could not delete the listing."); return; }
+    await loadGlobalOffices();
   };
 
   const cancelEdit = () => {
