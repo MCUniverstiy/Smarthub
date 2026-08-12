@@ -852,6 +852,94 @@ export function AdminPage() {
         </div>
       )}
       </>
+      ) : tab === "partnerships" ? (
+      <section className="space-y-4">
+        <div className="rounded-2xl border border-[#c8eeeb] bg-[#e2f7f5] p-5 text-sm text-[#1a2d2c]">
+          <p className="font-semibold">Partnership applications</p>
+          <p className="mt-1 text-[#4a5e5d]">
+            Companies asking us to host their offices. Approve only after you have reviewed the space. Nothing goes live until you publish it under Published offices.
+          </p>
+        </div>
+        {partnerships.length === 0 ? (
+          <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
+            <MessageSquare className="mx-auto h-8 w-8 text-slate-300" />
+            <p className="mt-3 text-sm text-slate-500">No partnership applications yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {partnerships.map((p) => (
+              <article key={p.reference} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-slate-900">{p.company || p.full_name}</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                        {p.pipeline_status}
+                      </span>
+                      <code className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{p.reference}</code>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {prettyStamp(p.created_at)} · {p.full_name}
+                      {p.country ? ` · ${p.country}` : ""}
+                      {p.city ? `, ${p.city}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={`mailto:${p.email}?subject=${encodeURIComponent(`Re: partnership (${p.reference})`)}`}>
+                        <Mail className="mr-1.5 h-3.5 w-3.5" /> Reply
+                      </a>
+                    </Button>
+                    {p.pipeline_status !== "approved" && (
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                        onClick={async () => {
+                          const res = await updatePartnershipStatus(p.reference, "approved");
+                          if (!res.ok) { setNotice(res.message || "Could not approve."); return; }
+                          setPartnerships((rows) => rows.map((r) => r.reference === p.reference ? { ...r, pipeline_status: "approved" } : r));
+                          setNotice(`${p.reference} approved. Create and publish the listing under Published offices.`);
+                        }}
+                      >
+                        Approve
+                      </Button>
+                    )}
+                    {p.pipeline_status !== "closed" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          const res = await updatePartnershipStatus(p.reference, "closed");
+                          if (!res.ok) { setNotice(res.message || "Could not close."); return; }
+                          setPartnerships((rows) => rows.map((r) => r.reference === p.reference ? { ...r, pipeline_status: "closed" } : r));
+                          setNotice(`${p.reference} closed.`);
+                        }}
+                      >
+                        Decline
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-3 whitespace-pre-wrap border-t border-slate-100 pt-3 text-sm leading-relaxed text-slate-700">
+                  {p.raw_message}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                  <a href={`mailto:${p.email}`} className="flex items-center gap-1.5 text-teal-700 hover:underline">
+                    <Mail className="h-3.5 w-3.5" />
+                    {p.email}
+                  </a>
+                  {p.phone && (
+                    <a href={`tel:${p.phone}`} className="flex items-center gap-1.5 text-teal-700 hover:underline">
+                      <Phone className="h-3.5 w-3.5" />
+                      {p.phone}
+                    </a>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
       ) : tab === "enquiries" ? (
       /* ---------------- Enquiries ---------------- */
       <>
@@ -1092,64 +1180,3 @@ export function AdminPage() {
     </Shell>
   );
 }
-
-ileName, file, { upsert: true });
-                            if (!error && data) {
-                              const { data: urlData } = supabase.storage.from('office-images').getPublicUrl(data.path);
-                              setNewOffice((v) => ({ ...v, image_url: urlData.publicUrl }));
-                            } else {
-                              const reader = new FileReader();
-                              reader.onload = () => setNewOffice((v) => ({ ...v, image_url: reader.result as string }));
-                              reader.readAsDataURL(file);
-                            }
-                          } catch (_) {
-                            const reader = new FileReader();
-                            reader.onload = () => setNewOffice((v) => ({ ...v, image_url: reader.result as string }));
-                            reader.readAsDataURL(file);
-                          }
-                        } else {
-                          const reader = new FileReader();
-                          reader.onload = () => setNewOffice((v) => ({ ...v, image_url: reader.result as string }));
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                    />
-                    {newOffice.image_url && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <img src={newOffice.image_url} alt="Preview" className="h-16 w-24 rounded object-cover border" />
-                        <button type="button" onClick={() => setNewOffice((v) => ({ ...v, image_url: null }))} className="text-xs text-rose-600 hover:underline">Remove</button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <Input placeholder="Amenities, comma separated" value={(newOffice.features ?? []).join(", ")} onChange={(e) => setNewOffice((v) => ({ ...v, features: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) }))} />
-                <div className="flex gap-2">
-                  <Button onClick={addOrUpdateOffice}>{editingId ? "Save draft" : "Create draft"}</Button>
-                  {editingId && <Button variant="outline" onClick={cancelEdit}>Cancel</Button>}
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <h2 className="font-display text-xl font-bold text-slate-900">Draft offices ({globalOffices.length})</h2>
-              {globalOffices.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No local drafts yet. Create one to prepare its content before database publishing is enabled.</p> : globalOffices.map((office) => (
-                <article key={office.id} className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex gap-4">
-                      {office.image_url && <img src={office.image_url} alt={office.name} className="h-14 w-20 rounded object-cover border" />}
-                      <div>
-                        <div className="flex items-center gap-2"><h3 className="font-semibold text-slate-900">{office.name}</h3><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${office.status === "published" && office.visibility ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{office.status === "published" && office.visibility ? "Live" : "Draft"}</span></div>
-                        <p className="text-sm text-slate-500">{office.city}, {office.country} · {office.capacity} people</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap justify-end gap-2"><Button size="sm" onClick={() => void toggleOfficePublication(office)} className={office.status === "published" && office.visibility ? "bg-slate-700 text-white hover:bg-slate-800" : "bg-[#148f8a] text-white hover:bg-[#1ab5ad]"}>{office.status === "published" && office.visibility ? "Hide" : "Publish"}</Button><Button size="sm" variant="outline" onClick={() => editOffice(office)}>Edit</Button><Button size="sm" variant="outline" className="text-rose-700" onClick={() => void deleteOffice(office.id)}>Delete</Button></div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-    </Shell>
-  );
-}
-
