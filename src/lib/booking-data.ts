@@ -196,7 +196,7 @@ export const ROOMS: Room[] = [
     rate: 800,
     unit: "hour",
     emoji: "🏢",
-    image: "/conferenceRoom.jpeg",
+    image: "/mainAreaKaraoke.jpeg",
     formValue: "Meeting Room B / 會議室 B / 会议室 B",
   },
   {
