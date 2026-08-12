@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { RouterLink, hashQuery } from "@/lib/router";
 import { companyFacts } from "@/lib/site-data";
-import { submitEnquiry, isSupabaseConfigured } from "@/lib/supabase";
+import { searchGlobalListings, submitSfoEnquiry } from "@/lib/global-office";
 
 interface GlobalOffice {
   id: string;
@@ -95,17 +95,25 @@ export function PartnershipPage() {
   // Offices (merged sample + any created via admin later – for demo we use sample)
   const [globalOffices, setGlobalOffices] = useState<GlobalOffice[]>(SAMPLE_GLOBAL_OFFICES);
 
-  // Load offices created in Admin (localStorage)
+  // Production listings come from Supabase. Sample cards remain as a useful
+  // preview until the global-office migration has been run and listings published.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("smarthub-global-offices");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length) {
-          setGlobalOffices([...parsed, ...SAMPLE_GLOBAL_OFFICES]);
-        }
+    void searchGlobalListings().then((rows) => {
+      if (rows.length) {
+        setGlobalOffices(rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          country: row.country,
+          city: row.city,
+          description: row.description_html.replace(/<[^>]*>/g, "") || "Premium global office listing.",
+          capacity: row.capacity,
+          rate: Number(row.rate),
+          unit: row.rate_unit,
+          image: row.image_url || undefined,
+          features: row.amenities || [],
+        })));
       }
-    } catch {}
+    });
   }, []);
 
   const handleChange = (field: keyof typeof form, value: string) => {
@@ -121,18 +129,15 @@ export function PartnershipPage() {
 
     setStatus("sending");
 
-    const enquiryData = {
+    const result = await submitSfoEnquiry({
       fullName: form.fullName,
       email: form.email,
       phone: form.phone,
       company: form.company,
-      service: "partnership-sfo-global",
-      message: `PARTNERSHIP ENQUIRY — Global SFO Office\n\nCountry of interest: ${form.country || "Not specified"}\nPreferred location: ${form.officeLocation || "Any"}\n\n${form.message}`,
-      source: "partnership-page",
-      lang,
-    };
-
-    const result = await submitEnquiry(enquiryData);
+      country: form.country,
+      city: form.officeLocation,
+      message: form.message,
+    });
 
     if (result.ok) {
       setSubmittedRef(result.reference);

@@ -832,7 +832,7 @@ export function AdminPage() {
         </div>
       )}
       </>
-      ) : (
+      ) : tab === "enquiries" ? (
       /* ---------------- Enquiries ---------------- */
       <>
       <div className="mb-6 flex flex-wrap gap-2">
@@ -982,6 +982,43 @@ export function AdminPage() {
         </div>
       )}
       </>
+      ) : (
+        <section className="space-y-6">
+          <div className="rounded-2xl border border-[#c8eeeb] bg-[#e2f7f5] p-5 text-sm text-[#1a2d2c]">
+            <p className="font-semibold">Global listing manager</p>
+            <p className="mt-1 text-[#4a5e5d]">Create and refine draft listings here. Run <code className="rounded bg-white px-1">supabase/global-office-platform.sql</code> before publishing to the global directory.</p>
+          </div>
+          <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <h2 className="font-display text-xl font-bold text-slate-900">{editingId ? "Edit draft office" : "New global office"}</h2>
+              <div className="mt-4 space-y-3">
+                <Input placeholder="Listing name" value={newOffice.name ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, name: e.target.value }))} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input placeholder="Country" value={newOffice.country ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, country: e.target.value }))} />
+                  <Input placeholder="City" value={newOffice.city ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, city: e.target.value }))} />
+                </div>
+                <textarea className="min-h-28 w-full rounded-md border border-slate-200 p-3 text-sm" placeholder="Public listing description" value={newOffice.description ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, description: e.target.value }))} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input type="number" min="1" placeholder="Capacity" value={newOffice.capacity ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, capacity: Number(e.target.value) }))} />
+                  <Input type="number" min="0" placeholder="HKD rate" value={newOffice.rate ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, rate: Number(e.target.value) }))} />
+                </div>
+                <Input placeholder="Amenities, comma separated" value={(newOffice.features ?? []).join(", ")} onChange={(e) => setNewOffice((v) => ({ ...v, features: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) }))} />
+                <div className="flex gap-2">
+                  <Button onClick={addOrUpdateOffice}>{editingId ? "Save draft" : "Create draft"}</Button>
+                  {editingId && <Button variant="outline" onClick={cancelEdit}>Cancel</Button>}
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <h2 className="font-display text-xl font-bold text-slate-900">Draft offices ({globalOffices.length})</h2>
+              {globalOffices.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No local drafts yet. Create one to prepare its content before database publishing is enabled.</p> : globalOffices.map((office) => (
+                <article key={office.id} className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-900">{office.name}</h3><p className="text-sm text-slate-500">{office.city}, {office.country} · {office.capacity} people · HK${office.rate}/{office.unit}</p></div><div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => editOffice(office)}>Edit</Button><Button size="sm" variant="outline" className="text-rose-700" onClick={() => deleteOffice(office.id)}>Delete</Button></div></div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
       )}
     </Shell>
   );
