@@ -744,6 +744,11 @@ export function AdminPage() {
                           <code className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
                             {b.reference}
                           </code>
+                          {b.source === "global" && (
+                            <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700 ring-1 ring-sky-200">
+                              Partner office
+                            </span>
+                          )}
                         </div>
                         <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-600">
                           <span className="flex items-center gap-1.5">
