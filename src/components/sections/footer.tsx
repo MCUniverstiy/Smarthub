@@ -62,6 +62,7 @@ export function Footer() {
     { to: "services", label: t.footer.links.services },
     { to: "why-hk", label: t.footer.links.whyhk },
     { to: "pricing", label: t.footer.links.pricing },
+    { to: "partnership", label: "Partnership" },
     { to: "book", label: t.booking.navLabel },
     { to: "insights", label: t.footer.links.insights },
     { to: "contact", label: t.footer.links.contact },
@@ -144,9 +145,11 @@ export function Footer() {
             {/* Logo — same look as the navbar logo but with a lighter teal
                 tone suited to the dark background. */}
             <RouterLink to="home" className="flex items-center gap-2.5" aria-label="Smarthub Connect home">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 text-lg font-bold text-white">
-                S
-              </div>
+              <img 
+                src="/smarthub-logo.png" 
+                alt="Smarthub Connect" 
+                className="h-10 w-auto object-contain" 
+              />
               <div className="flex flex-col leading-tight">
                 <span className="font-display text-base font-bold text-white">
                   Smarthub<span className="text-teal-400"> Connect</span>

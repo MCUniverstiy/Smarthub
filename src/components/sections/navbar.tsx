@@ -84,6 +84,7 @@ export function Navbar() {
     { to: "services", label: t.nav.services },
     { to: "why-hk", label: t.nav.whyhk },
     { to: "pricing", label: t.nav.pricing },
+    { to: "partnership", label: "Partnership" },
     { to: "book", label: t.booking.navLabel },
     { to: "insights", label: t.nav.insights },
     { to: "contact", label: t.nav.contact },
@@ -148,9 +149,11 @@ export function Navbar() {
           {/* Uses RouterLink so clicking it navigates to the home route
               without a full page reload. The "S" tile is a CSS gradient square. */}
           <RouterLink to="home" className="flex items-center gap-2.5" aria-label="Smarthub Connect home">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 text-lg font-bold text-white shadow-md shadow-teal-500/20">
-              S
-            </div>
+            <img 
+              src="/smarthub-logo.png" 
+              alt="Smarthub Connect" 
+              className="h-10 w-auto object-contain" 
+            />
             <div className="flex flex-col leading-tight">
               <span className="font-display text-base font-bold text-slate-900">
                 Smarthub<span className="text-teal-600"> Connect</span>
@@ -235,9 +238,11 @@ export function Navbar() {
                 {/* Sheet header: small logo + company name. SheetTitle is
                     required for accessibility (gives the dialog a name). */}
                 <SheetTitle className="mb-6 flex items-center gap-2">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 font-bold text-white">
-                    S
-                  </div>
+                  <img 
+                    src="/smarthub-logo.png" 
+                    alt="Smarthub Connect" 
+                    className="h-9 w-auto object-contain" 
+                  />
                   <span className="font-display text-lg font-bold">Smarthub Connect</span>
                 </SheetTitle>
                 {/* Vertical list of nav links. SheetClose asChild wraps each

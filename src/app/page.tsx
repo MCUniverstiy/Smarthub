@@ -50,6 +50,7 @@ import { InsightsPage } from "@/components/pages/insights";
 import { BookingPage } from "@/components/pages/booking";
 import { AdminPage } from "@/components/pages/admin";
 import { ContactPage } from "@/components/pages/contact";
+import { PartnershipPage } from "@/components/pages/partnership";
 import { LegalPage } from "@/components/pages/legal";
 import { NotFoundPage } from "@/components/pages/not-found";
 
@@ -91,6 +92,8 @@ function RouterOutlet() {
     // footer and sitemap — reachable only by typing #/admin.
     case "admin":
       return <AdminPage />;
+    case "partnership":
+      return <PartnershipPage />;
     case "contact":
       return <ContactPage />;
     // The four legal routes all share the LegalPage component, passing
