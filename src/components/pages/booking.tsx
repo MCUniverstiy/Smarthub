@@ -41,6 +41,7 @@ import Image from "next/image";
 import { useLang } from "@/lib/i18n/lang-context";
 import { PageHero } from "@/components/blocks/page-hero";
 import { SectionHeading } from "@/components/blocks/section-heading";
+import { GlobalOfficeDirectory } from "@/components/blocks/global-office-directory";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -694,7 +695,11 @@ export function BookingPage() {
         </div>
       </section>
 
-      {/* ===== ROOM CATALOGUE ===== */}
+      {/* Global locations come first. The Hong Kong room catalogue below remains
+          the local booking experience. */}
+      <GlobalOfficeDirectory />
+
+      {/* ===== HONG KONG ROOM CATALOGUE ===== */}
       {/* Six selectable cards. Clicking one sets `form.roomId`, updates the
           URL (`?room=...`) and scrolls to the form. The selected card gets
           a teal ring so the choice stays visible while scrolling. */}
