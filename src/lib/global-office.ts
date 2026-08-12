@@ -110,3 +110,14 @@ export async function setGlobalListingPublication(id: string, published: boolean
     .eq("id", id);
   return error ? { ok: false, message: error.message } : { ok: true };
 }
+
+export async function submitGlobalBookingRequest(input: { listingId: string; fullName: string; email: string; phone?: string; company?: string; startsAt: string; endsAt: string; attendees: number; message?: string }): Promise<{ ok: true; reference: string } | { ok: false; message: string }> {
+  if (!supabase) return { ok: false, message: "The global booking service is not configured yet." };
+  const { data, error } = await supabase.rpc("submit_global_booking_request", {
+    p_listing_id: input.listingId, p_full_name: input.fullName, p_email: input.email,
+    p_phone: input.phone || null, p_company: input.company || null, p_starts_at: input.startsAt,
+    p_ends_at: input.endsAt, p_attendees: input.attendees, p_message: input.message || "",
+  });
+  const row = Array.isArray(data) ? data[0] : data;
+  return error || !row?.reference ? { ok: false, message: error?.message || "No booking reference returned." } : { ok: true, reference: String(row.reference) };
+}
