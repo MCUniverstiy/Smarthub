@@ -175,7 +175,7 @@ export function BookingPage() {
   const [globalListings, setGlobalListings] = useState<GlobalListing[]>([]);
   const [globalListingId, setGlobalListingId] = useState("");
   const selectedGlobalListing = globalListings.find((listing) => listing.id === globalListingId);
-  const isGlobalBooking = Boolean(selectedGlobalListing);
+  const isGlobalBooking = selectedOfficeLocation !== "Hong Kong" || Boolean(selectedGlobalListing);
 
   const FALLBACK_OFFICE_IMAGE =
     "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80";
@@ -1046,16 +1046,27 @@ export function BookingPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label={b.form.room} htmlFor="room" error={errors.roomId} required>
                     <Select
-                      value={isGlobalBooking ? globalListingId : form.roomId}
-                      onValueChange={(v) => isGlobalBooking ? setGlobalListingId(v) : update("roomId", v as RoomId)}
+                      value={catalogue.some((room) => room.kind === "global") ? globalListingId : form.roomId}
+                      onValueChange={(v) => {
+                        const item = catalogue.find((room) => room.id === v);
+                        if (item?.kind === "local") {
+                          setGlobalListingId("");
+                          update("roomId", v as RoomId);
+                        } else {
+                          setGlobalListingId(v);
+                          update("roomId", "");
+                        }
+                      }}
                     >
                       <SelectTrigger id="room" className="w-full">
-                        <SelectValue placeholder={b.form.chooseRoom} />
+                        <SelectValue placeholder={catalogue.length ? b.form.chooseRoom : `No ${selectedOfficeLocation} rooms yet`} />
                       </SelectTrigger>
                       <SelectContent>
-                        {isGlobalBooking
-                          ? globalListings.map((listing) => <SelectItem key={listing.id} value={listing.id}>{listing.name} · {listing.city}</SelectItem>)
-                          : ROOMS.map((room) => <SelectItem key={room.id} value={room.id}>{room.emoji} {room.name[lang]}</SelectItem>)}
+                        {catalogue.map((room) => (
+                          <SelectItem key={room.id} value={room.id}>
+                            {room.emoji ? `${room.emoji} ` : ""}{room.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Field>
