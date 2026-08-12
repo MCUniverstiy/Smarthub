@@ -236,3 +236,23 @@ grant execute on function public.submit_sfo_enquiry(text,text,text,text,text,tex
 revoke all on function public.submit_global_booking_request(uuid,text,text,text,text,timestamptz,timestamptz,integer,text) from public;
 grant execute on function public.submit_global_booking_request(uuid,text,text,text,text,timestamptz,timestamptz,integer,text) to anon, authenticated;
 grant execute on function public.convert_sfo_enquiry_to_listing(uuid,text) to authenticated;
+
+-- Staff may delete partnership applications (plain DELETE is not granted).
+create or replace function public.delete_sfo_enquiry(p_reference text)
+returns table(deleted boolean, reference text)
+language plpgsql volatile security definer set search_path = public as $$
+begin
+  if not public.is_staff() then
+    raise exception 'Only staff can delete partnership applications' using errcode = 'insufficient_privilege';
+  end if;
+  delete from public.sfo_enquiries e where e.reference = p_reference;
+  if found then
+    return query select true, p_reference;
+  else
+    return query select false, p_reference;
+  end if;
+end $$;
+
+revoke all on function public.delete_sfo_enquiry(text) from public;
+grant execute on function public.delete_sfo_enquiry(text) to authenticated;
+grant delete on public.sfo_enquiries to authenticated;

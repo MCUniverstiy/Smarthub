@@ -47,6 +47,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatHKD } from "@/lib/booking-data";
 import {
+  deletePartnershipApplication,
   fetchPartnershipApplications,
   getManagedGlobalListings,
   removeGlobalListing,
@@ -902,32 +903,27 @@ export function AdminPage() {
                       {p.city ? `, ${p.city}` : ""}
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      type="button"
-                      onClick={() => {
-                        const subject = `Re: your SmartHub partnership application (${p.reference})`;
-                        const body = [
-                          `Hi ${p.full_name},`,
-                          "",
-                          "Thank you for applying to host your office with SmartHub.",
-                          "",
-                          p.raw_message ? `You wrote:\n${p.raw_message}` : "",
-                          "",
-                          "Best regards,",
-                          "SmartHub Connect",
-                        ].filter(Boolean).join("\n");
-                        window.location.href = `mailto:${p.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                      }}
+                  <div className="relative z-10 flex flex-wrap gap-2">
+                    <a
+                      href={`mailto:${encodeURIComponent(p.email)}?subject=${encodeURIComponent(`Re: your SmartHub partnership application (${p.reference})`)}&body=${encodeURIComponent(`Hi ${p.full_name},\n\nThank you for applying to host your office with SmartHub.\n\n`)}`}
+                      className="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                     >
                       <Mail className="mr-1.5 h-3.5 w-3.5" /> Reply
-                    </Button>
+                    </a>
+                    <button
+                      type="button"
+                      className="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                      onClick={async () => {
+                        try { await navigator.clipboard.writeText(p.email); } catch { /* ignore */ }
+                        setNotice(`Applicant email: ${p.email} (copied if the browser allowed).`);
+                      }}
+                    >
+                      Copy email
+                    </button>
                     {p.pipeline_status !== "approved" && (
-                      <Button
-                        size="sm"
-                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                      <button
+                        type="button"
+                        className="inline-flex items-center rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700"
                         onClick={async () => {
                           const res = await updatePartnershipStatus(p.reference, "approved");
                           if (!res.ok) { setNotice(res.message || "Could not approve."); return; }
@@ -936,12 +932,12 @@ export function AdminPage() {
                         }}
                       >
                         Approve
-                      </Button>
+                      </button>
                     )}
                     {p.pipeline_status !== "closed" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
+                      <button
+                        type="button"
+                        className="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                         onClick={async () => {
                           const res = await updatePartnershipStatus(p.reference, "closed");
                           if (!res.ok) { setNotice(res.message || "Could not close."); return; }
@@ -950,32 +946,35 @@ export function AdminPage() {
                         }}
                       >
                         Decline
-                      </Button>
+                      </button>
                     )}
                     {confirming === p.reference ? (
-                      <Button
-                        size="sm"
-                        className="bg-rose-600 text-white hover:bg-rose-700"
+                      <button
+                        type="button"
+                        className="inline-flex items-center rounded-md bg-rose-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700"
                         onClick={async () => {
                           setConfirming("");
                           const res = await deletePartnershipApplication(p.reference);
-                          if (!res.ok) { setNotice(res.message || "Could not delete."); return; }
+                          if (!res.ok) {
+                            setNotice(res.message || "Could not delete.");
+                            alert(res.message || "Could not delete this application.");
+                            return;
+                          }
                           setPartnerships((rows) => rows.filter((r) => r.reference !== p.reference));
                           setNotice(`${p.reference} deleted.`);
+                          await load();
                         }}
                       >
                         Delete for good?
-                      </Button>
+                      </button>
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
+                      <button
+                        type="button"
+                        className="inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50"
                         onClick={() => setConfirming(p.reference)}
-                        className="text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                        aria-label={`Delete application ${p.reference}`}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+                      </button>
                     )}
                   </div>
                 </div>
