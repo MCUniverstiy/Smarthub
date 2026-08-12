@@ -97,14 +97,14 @@ export function Navbar() {
     <>
       {/* ============== TOP UTILITY BAR (desktop only, lg:block) ============== */}
       {/* Hidden on mobile to save space. Shows contact methods + licence badge. */}
-      <div className="hidden bg-[#0f1f2e] text-slate-300 lg:block">
+      <div className="hidden border-b border-[#ebf2f1] bg-white text-[#4a5e5d] lg:block">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2 text-xs">
           {/* Left side: clickable phone, WhatsApp and email links */}
           <div className="flex items-center gap-5">
             {/* tel: link opens the device phone dialer */}
             <a
               href="tel:+85223833283"
-              className="inline-flex items-center gap-1.5 transition hover:text-teal-300"
+              className="inline-flex items-center gap-1.5 transition hover:text-[#148f8a]"
             >
               <Phone className="h-3 w-3" />
               {t.topbar.phone}
@@ -114,19 +114,19 @@ export function Navbar() {
               href="https://wa.me/85255013516"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 transition hover:text-teal-300"
+              className="inline-flex items-center gap-1.5 transition hover:text-[#148f8a]"
             >
               <MessageCircle className="h-3 w-3" />
               {t.topbar.whatsapp}
             </a>
             {/* mailto: link opens the user's email client */}
-            <a href={`mailto:${t.topbar.email}`} className="transition hover:text-teal-300">
+            <a href={`mailto:${t.topbar.email}`} className="transition hover:text-[#148f8a]">
               {t.topbar.email}
             </a>
           </div>
           {/* Right side: TCSP licence badge as a small pill */}
           <div className="flex items-center gap-4">
-            <span className="rounded-full bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-teal-300">
+            <span className="rounded-full bg-[#e2f7f5] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#148f8a]">
               {t.topbar.licence}
             </span>
           </div>
@@ -144,21 +144,21 @@ export function Navbar() {
       >
         {/* Centered content row: max-w-7xl container with logo on the left
             and nav/actions on the right. */}
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
+        <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-3.5">
           {/* ---------- LOGO ---------- */}
           {/* Uses RouterLink so clicking it navigates to the home route
               without a full page reload. The "S" tile is a CSS gradient square. */}
           <RouterLink to="home" className="flex items-center gap-2.5" aria-label="Smarthub Connect home">
             <img 
-              src="/smarthub-logo.png" 
-              alt="Smarthub Connect" 
-              className="h-10 w-auto object-contain" 
+              src="/smarthub-logo.png"
+              alt="Smarthub Connect"
+              className="h-16 w-auto object-contain"
             />
             <div className="flex flex-col leading-tight">
-              <span className="font-display text-base font-bold text-slate-900">
-                Smarthub<span className="text-teal-600"> Connect</span>
+              <span className="font-display text-base font-semibold text-[#1a2d2c]">
+                Smarthub<span className="text-[#148f8a]"> Connect</span>
               </span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">
+              <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#7a8e8d]">
                 Hong Kong · Wan Chai
               </span>
             </div>
@@ -173,10 +173,10 @@ export function Navbar() {
               <RouterLink
                 key={link.to}
                 to={link.to}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                className={`relative px-3 py-2 text-[15px] font-medium transition after:absolute after:bottom-0 after:left-3 after:h-0.5 after:w-0 after:bg-[#d4a94c] after:transition-all hover:after:w-[calc(100%-24px)] ${
                   route === link.to
-                    ? "bg-teal-50 text-teal-700"
-                    : "text-slate-700 hover:bg-teal-50 hover:text-teal-700"
+                    ? "text-[#148f8a] after:w-[calc(100%-24px)]"
+                    : "text-[#1a2d2c] hover:text-[#148f8a]"
                 }`}
               >
                 {link.label}
@@ -201,14 +201,14 @@ export function Navbar() {
               asChild
               size="sm"
               variant="outline"
-              className="hidden border-teal-200 text-teal-700 hover:bg-teal-50 lg:inline-flex"
+              className="hidden border-[#1ab5ad] text-[#148f8a] hover:bg-[#e2f7f5] lg:inline-flex"
             >
               <RouterLink to="contact">{t.nav.cta}</RouterLink>
             </Button>
             <Button
               asChild
               size="sm"
-              className="hidden bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/25 hover:from-teal-600 hover:to-teal-700 sm:inline-flex"
+              className="hidden bg-[#e04a3c] text-white shadow-none hover:bg-[#e8665a] sm:inline-flex"
             >
               <RouterLink to="book">
                 {t.booking.ctaShort}
@@ -239,9 +239,9 @@ export function Navbar() {
                     required for accessibility (gives the dialog a name). */}
                 <SheetTitle className="mb-6 flex items-center gap-2">
                   <img 
-                    src="/smarthub-logo.png" 
-                    alt="Smarthub Connect" 
-                    className="h-9 w-auto object-contain" 
+                    src="/smarthub-logo.png"
+                    alt="Smarthub Connect"
+                    className="h-9 w-auto object-contain"
                   />
                   <span className="font-display text-lg font-bold">Smarthub Connect</span>
                 </SheetTitle>

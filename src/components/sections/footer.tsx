@@ -91,16 +91,16 @@ export function Footer() {
   //     4. Copyright + group badge row
   //   </footer>
   return (
-    <footer className="bg-slate-950 text-slate-400">
+    <footer className="bg-[#148f8a] text-white/65">
       {/* ============== TOP CTA STRIP ============== */}
       {/* A subtle teal-tinted gradient strip with a WhatsApp icon, a short
           prompt and a gradient "WhatsApp Us" button. The button is a plain
           <a> that opens WhatsApp in a new tab using companyFacts.whatsappUrl. */}
-      <div className="border-b border-white/5 bg-gradient-to-r from-teal-600/10 via-transparent to-emerald-600/10">
+      <div className="border-b border-white/10 bg-[#148f8a]">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
           {/* Left: icon tile + two-line prompt (title + body) */}
           <div className="flex items-center gap-3 text-center sm:text-left">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1ab5ad] text-white">
               <MessageCircle className="h-5 w-5" />
             </div>
             <div>
@@ -116,7 +116,7 @@ export function Footer() {
             {/* Room booking — the self-service path, so it leads. */}
             <RouterLink
               to="book"
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-500/25 transition hover:from-teal-400 hover:to-emerald-400 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-950"
+              className="inline-flex items-center gap-2 rounded-full bg-[#d4a94c] px-5 py-2.5 text-sm font-semibold text-[#148f8a] shadow-none transition hover:bg-[#e0bc68] focus:outline-none focus:ring-2 focus:ring-[#7ae2dc] focus:ring-offset-2 focus:ring-offset-[#148f8a]"
             >
               <CalendarDays className="h-4 w-4" />
               {t.booking.ctaShort}
@@ -126,7 +126,7 @@ export function Footer() {
               href={companyFacts.whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-slate-950"
+              className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#7ae2dc] focus:ring-offset-2 focus:ring-offset-[#148f8a]"
             >
               <MessageCircle className="h-4 w-4" />
               {t.footer.ctaButton}
