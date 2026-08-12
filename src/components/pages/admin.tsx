@@ -46,7 +46,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatHKD } from "@/lib/booking-data";
-import { getManagedGlobalListings, removeGlobalListing, saveGlobalListing } from "@/lib/global-office";
+import { getManagedGlobalListings, removeGlobalListing, saveGlobalListing, setGlobalListingPublication } from "@/lib/global-office";
 import {
   BOOKING_STATUSES,
   ENQUIRY_STATUSES,
@@ -166,6 +166,8 @@ export function AdminPage() {
     rate: number;
     unit: "hour" | "day";
     features: string[];
+    status?: "draft" | "review" | "published" | "hidden" | "archived";
+    visibility?: boolean;
   };
 
   const [globalOffices, setGlobalOffices] = useState<GlobalOffice[]>([]);
@@ -185,7 +187,7 @@ export function AdminPage() {
 
   const loadGlobalOffices = useCallback(async () => {
     const rows = await getManagedGlobalListings();
-    setGlobalOffices(rows.map((row) => ({ id: row.id, name: row.name, country: row.country, city: row.city, description: row.description_html, capacity: row.capacity, rate: Number(row.rate), unit: row.rate_unit, features: row.amenities || [] })));
+    setGlobalOffices(rows.map((row) => ({ id: row.id, name: row.name, country: row.country, city: row.city, description: row.description_html, capacity: row.capacity, rate: Number(row.rate), unit: row.rate_unit, features: row.amenities || [], status: row.status, visibility: row.visibility })));
   }, []);
 
   useEffect(() => { void loadGlobalOffices(); }, [loadGlobalOffices]);
@@ -228,6 +230,13 @@ export function AdminPage() {
     if (!confirm("Delete this global office listing?")) return;
     const result = await removeGlobalListing(id);
     if (!result.ok) { alert(result.message || "Could not delete the listing."); return; }
+    await loadGlobalOffices();
+  };
+
+  const toggleOfficePublication = async (office: GlobalOffice) => {
+    const publish = !(office.status === "published" && office.visibility);
+    const result = await setGlobalListingPublication(office.id, publish);
+    if (!result.ok) { alert(result.message || "Could not update listing visibility."); return; }
     await loadGlobalOffices();
   };
 
@@ -1011,7 +1020,7 @@ export function AdminPage() {
               <h2 className="font-display text-xl font-bold text-slate-900">Draft offices ({globalOffices.length})</h2>
               {globalOffices.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No local drafts yet. Create one to prepare its content before database publishing is enabled.</p> : globalOffices.map((office) => (
                 <article key={office.id} className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-900">{office.name}</h3><p className="text-sm text-slate-500">{office.city}, {office.country} · {office.capacity} people · HK${office.rate}/{office.unit}</p></div><div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => editOffice(office)}>Edit</Button><Button size="sm" variant="outline" className="text-rose-700" onClick={() => deleteOffice(office.id)}>Delete</Button></div></div>
+                  <div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><h3 className="font-semibold text-slate-900">{office.name}</h3><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${office.status === "published" && office.visibility ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{office.status === "published" && office.visibility ? "Live" : "Draft"}</span></div><p className="text-sm text-slate-500">{office.city}, {office.country} · {office.capacity} people · HK${office.rate}/{office.unit}</p></div><div className="flex flex-wrap justify-end gap-2"><Button size="sm" onClick={() => void toggleOfficePublication(office)} className={office.status === "published" && office.visibility ? "bg-slate-700 text-white hover:bg-slate-800" : "bg-[#148f8a] text-white hover:bg-[#1ab5ad]"}>{office.status === "published" && office.visibility ? "Hide" : "Publish"}</Button><Button size="sm" variant="outline" onClick={() => editOffice(office)}>Edit</Button><Button size="sm" variant="outline" className="text-rose-700" onClick={() => void deleteOffice(office.id)}>Delete</Button></div></div>
                 </article>
               ))}
             </div>

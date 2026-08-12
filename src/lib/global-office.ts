@@ -99,3 +99,14 @@ export async function removeGlobalListing(id: string): Promise<{ ok: boolean; me
   const { error } = await supabase.from("global_listings").delete().eq("id", id);
   return error ? { ok: false, message: error.message } : { ok: true };
 }
+
+
+/** Staff-only publication control. Published + visible is the only state exposed publicly. */
+export async function setGlobalListingPublication(id: string, published: boolean): Promise<{ ok: boolean; message?: string }> {
+  if (!supabase) return { ok: false, message: "Supabase is not configured." };
+  const { error } = await supabase
+    .from("global_listings")
+    .update({ status: published ? "published" : "hidden", visibility: published, published_at: published ? new Date().toISOString() : null })
+    .eq("id", id);
+  return error ? { ok: false, message: error.message } : { ok: true };
+}
