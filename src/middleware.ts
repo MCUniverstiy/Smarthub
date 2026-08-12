@@ -8,6 +8,11 @@ import type { NextRequest } from "next/server";
  * equivalent so the application form (and every other page) loads.
  */
 export function middleware(request: NextRequest) {
+  // Never intercept form POSTs — there is no server action here, and a
+  // POST to /partnership is what produced the "This page couldn't load" crash.
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return NextResponse.next();
+  }
   const seg = request.nextUrl.pathname.replace(/\/+$/, "").replace(/^\//, "");
   const dest = `/#/${seg}${request.nextUrl.search}`;
   return new NextResponse(
