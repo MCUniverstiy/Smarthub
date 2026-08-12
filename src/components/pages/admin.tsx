@@ -175,6 +175,8 @@ export function AdminPage() {
     capacity: number;
     features: string[];
     image_url?: string | null;
+    rate?: number;
+    rate_unit?: "hour" | "day";
     status?: "draft" | "review" | "published" | "hidden" | "archived";
     visibility?: boolean;
   };
@@ -189,13 +191,15 @@ export function AdminPage() {
     capacity: 8,
     features: ["Private boardroom", "24/7 access", "Compliance support"],
     image_url: null,
+    rate: 0,
+    rate_unit: "hour",
   });
 
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const loadGlobalOffices = useCallback(async () => {
     const rows = await getManagedGlobalListings();
-    setGlobalOffices(rows.map((row) => ({ id: row.id, name: row.name, country: row.country, city: row.city, description: row.description_html, capacity: row.capacity, features: row.amenities || [], image_url: row.image_url, status: row.status, visibility: row.visibility })));
+    setGlobalOffices(rows.map((row) => ({ id: row.id, name: row.name, country: row.country, city: row.city, description: row.description_html, capacity: row.capacity, features: row.amenities || [], image_url: row.image_url, rate: Number(row.rate ?? 0), rate_unit: row.rate_unit ?? "hour", status: row.status, visibility: row.visibility })));
   }, []);
 
   useEffect(() => { void loadGlobalOffices(); }, [loadGlobalOffices]);
@@ -215,17 +219,19 @@ export function AdminPage() {
       capacity: Number(newOffice.capacity) || 8,
       features: Array.isArray(newOffice.features) ? newOffice.features : ["Private boardroom", "24/7 access"],
       image_url: newOffice.image_url || null,
+      rate: Number(newOffice.rate) || 0,
+      rate_unit: newOffice.rate_unit === "day" ? "day" : "hour",
     };
 
     const saved = await saveGlobalListing({
       id: editingId || undefined, name: office.name, country: office.country, city: office.city,
       description_html: office.description, capacity: office.capacity, amenities: office.features,
-      image_url: office.image_url,
+      image_url: office.image_url, rate: office.rate, rate_unit: office.rate_unit,
     });
     if (!saved.ok) { alert(saved.message || "Could not save the listing. Run the global-office SQL migration first."); return; }
     await loadGlobalOffices();
     setEditingId(null);
-    setNewOffice({ name: "", country: "Hong Kong", city: "Wan Chai", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
+    setNewOffice({ name: "", country: "Hong Kong", city: "Wan Chai", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"], image_url: null, rate: 0, rate_unit: "hour" });
   };
 
   const editOffice = (office: GlobalOffice) => {
@@ -249,7 +255,7 @@ export function AdminPage() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setNewOffice({ name: "", country: "Hong Kong", city: "Wan Chai", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
+    setNewOffice({ name: "", country: "Hong Kong", city: "Wan Chai", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"], image_url: null, rate: 0, rate_unit: "hour" });
   };
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<BookingStatus | "all">("pending");
@@ -1156,8 +1162,20 @@ export function AdminPage() {
               size="sm"
               className="mt-3"
               onClick={async () => {
-                if (!confirm("Create the six Wan Chai rooms as editable drafts? You can change photos and text, then publish.")) return;
-                for (const room of ROOMS) {
+                // Skip rooms that were already imported, so pressing the button
+                // twice tops up the list instead of creating six duplicates.
+                const existing = new Set(
+                  globalOffices
+                    .filter((o) => o.country.toLowerCase() === "hong kong")
+                    .map((o) => o.name.trim().toLowerCase())
+                );
+                const pending = ROOMS.filter((room) => !existing.has(room.name.en.trim().toLowerCase()));
+                if (!pending.length) {
+                  setNotice("All six Wan Chai rooms are already in the list below.");
+                  return;
+                }
+                if (!confirm(`Add ${pending.length} Wan Chai room${pending.length === 1 ? "" : "s"} as editable draft${pending.length === 1 ? "" : "s"}? You can change photos, rates and text, then publish.`)) return;
+                for (const room of pending) {
                   const saved = await saveGlobalListing({
                     name: room.name.en,
                     country: "Hong Kong",
@@ -1169,10 +1187,10 @@ export function AdminPage() {
                     rate: room.rate,
                     rate_unit: room.unit,
                   });
-                  if (!saved.ok) { alert(saved.message || "Could not import Hong Kong rooms."); return; }
+                  if (!saved.ok) { alert(`Could not import "${room.name.en}": ${saved.message || "unknown error"}`); await loadGlobalOffices(); return; }
                 }
                 await loadGlobalOffices();
-                setNotice("Wan Chai rooms imported as drafts. Edit them, then Publish.");
+                setNotice(`${pending.length} Wan Chai room${pending.length === 1 ? "" : "s"} imported as draft${pending.length === 1 ? "" : "s"}. Edit them, then Publish.`);
               }}
             >
               Import Hong Kong rooms
@@ -1232,6 +1250,23 @@ export function AdminPage() {
                     )}
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-slate-500 block mb-1">Rate (HKD)</label>
+                    <Input type="number" min="0" step="1" placeholder="e.g. 500" value={newOffice.rate ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, rate: Number(e.target.value) }))} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 block mb-1">Charged per</label>
+                    <select
+                      className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                      value={newOffice.rate_unit ?? "hour"}
+                      onChange={(e) => setNewOffice((v) => ({ ...v, rate_unit: e.target.value === "day" ? "day" : "hour" }))}
+                    >
+                      <option value="hour">Hour</option>
+                      <option value="day">Day</option>
+                    </select>
+                  </div>
+                </div>
                 <Input placeholder="Amenities, comma separated" value={(newOffice.features ?? []).join(", ")} onChange={(e) => setNewOffice((v) => ({ ...v, features: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) }))} />
                 <div className="flex gap-2">
                   <Button onClick={addOrUpdateOffice}>{editingId ? "Save draft" : "Create draft"}</Button>
@@ -1248,7 +1283,7 @@ export function AdminPage() {
                       {office.image_url && <img src={office.image_url} alt={office.name} className="h-14 w-20 rounded object-cover border" />}
                       <div>
                         <div className="flex items-center gap-2"><h3 className="font-semibold text-slate-900">{office.name}</h3><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${office.status === "published" && office.visibility ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{office.status === "published" && office.visibility ? "Live" : "Draft"}</span></div>
-                        <p className="text-sm text-slate-500">{office.city}, {office.country} · {office.capacity} people</p>
+                        <p className="text-sm text-slate-500">{office.city}, {office.country} · {office.capacity} people{office.rate ? ` · ${formatHKD(office.rate)} / ${office.rate_unit === "day" ? "day" : "hour"}` : ""}</p>
                       </div>
                     </div>
                     <div className="flex flex-wrap justify-end gap-2"><Button size="sm" onClick={() => void toggleOfficePublication(office)} className={office.status === "published" && office.visibility ? "bg-slate-700 text-white hover:bg-slate-800" : "bg-[#148f8a] text-white hover:bg-[#1ab5ad]"}>{office.status === "published" && office.visibility ? "Hide" : "Publish"}</Button><Button size="sm" variant="outline" onClick={() => editOffice(office)}>Edit</Button><Button size="sm" variant="outline" className="text-rose-700" onClick={() => void deleteOffice(office.id)}>Delete</Button></div>

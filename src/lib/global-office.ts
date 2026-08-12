@@ -232,6 +232,11 @@ export async function saveGlobalListing(draft: ListingDraft): Promise<{ ok: bool
     capacity: draft.capacity, amenities: draft.amenities,
     status: draft.status ?? "draft", visibility: draft.visibility ?? false,
     slug: draft.id ? undefined : `${slugify(draft.country)}-${slugify(draft.city)}-${slugify(draft.name)}-${Date.now().toString().slice(-5)}`,
+    // `rate` is NOT NULL with no default in global_listings, so an insert that
+    // omits it fails outright. Default to 0 ("price on request") rather than
+    // letting the whole save disappear with a constraint error.
+    rate: draft.rate ?? 0,
+    rate_unit: draft.rate_unit ?? "hour",
   };
   if (draft.image_url !== undefined) row.image_url = draft.image_url;
   const query = draft.id
