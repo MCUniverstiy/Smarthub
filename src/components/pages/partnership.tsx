@@ -23,7 +23,7 @@ import {
   MapPin, 
   CalendarDays 
 } from "lucide-react";
-import { RouterLink, hashQuery } from "@/lib/router";
+
 import { companyFacts } from "@/lib/site-data";
 import { searchGlobalListings, submitSfoEnquiry } from "@/lib/global-office";
 
@@ -335,7 +335,7 @@ export function PartnershipPage() {
           </div>
 
           <div className="mt-8 text-center">
-            <p className="text-sm text-slate-600">Already a partner? Log in to the <RouterLink to="admin" className="font-semibold text-teal-600 underline">Admin Dashboard</RouterLink> to manage your offices.</p>
+            <p className="text-sm text-slate-600">Already a partner? Our team will contact you with the next steps for managing your office listing.</p>
           </div>
         </div>
       </section>
