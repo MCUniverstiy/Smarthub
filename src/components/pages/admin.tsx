@@ -854,11 +854,29 @@ export function AdminPage() {
       </>
       ) : tab === "partnerships" ? (
       <section className="space-y-4">
-        <div className="rounded-2xl border border-[#c8eeeb] bg-[#e2f7f5] p-5 text-sm text-[#1a2d2c]">
-          <p className="font-semibold">Partnership applications</p>
-          <p className="mt-1 text-[#4a5e5d]">
-            Companies asking us to host their offices. Approve only after you have reviewed the space. Nothing goes live until you publish it under Published offices.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-[#c8eeeb] bg-[#e2f7f5] p-5 text-sm text-[#1a2d2c]">
+          <div>
+            <p className="font-semibold">Partnership applications</p>
+            <p className="mt-1 text-[#4a5e5d]">
+              Companies asking us to host their offices. Approve only after you have reviewed the space. Nothing goes live until you publish it under Published offices.
+            </p>
+          </div>
+          {partnerships.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-rose-200 text-rose-700 hover:bg-rose-50"
+              onClick={async () => {
+                if (!confirm(`Delete all ${partnerships.length} partnership applications? This cannot be undone from this screen.`)) return;
+                const results = await Promise.all(partnerships.map((row) => deletePartnershipApplication(row.reference)));
+                const failed = results.filter((r) => !r.ok).length;
+                await load();
+                setNotice(failed ? `${partnerships.length - failed} deleted, ${failed} failed.` : "All partnership applications deleted.");
+              }}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete all
+            </Button>
+          )}
         </div>
         {partnerships.length === 0 ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
@@ -885,10 +903,26 @@ export function AdminPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button size="sm" variant="outline" asChild>
-                      <a href={`mailto:${p.email}?subject=${encodeURIComponent(`Re: partnership (${p.reference})`)}`}>
-                        <Mail className="mr-1.5 h-3.5 w-3.5" /> Reply
-                      </a>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      type="button"
+                      onClick={() => {
+                        const subject = `Re: your SmartHub partnership application (${p.reference})`;
+                        const body = [
+                          `Hi ${p.full_name},`,
+                          "",
+                          "Thank you for applying to host your office with SmartHub.",
+                          "",
+                          p.raw_message ? `You wrote:\n${p.raw_message}` : "",
+                          "",
+                          "Best regards,",
+                          "SmartHub Connect",
+                        ].filter(Boolean).join("\n");
+                        window.location.href = `mailto:${p.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      }}
+                    >
+                      <Mail className="mr-1.5 h-3.5 w-3.5" /> Reply
                     </Button>
                     {p.pipeline_status !== "approved" && (
                       <Button
@@ -918,16 +952,45 @@ export function AdminPage() {
                         Decline
                       </Button>
                     )}
+                    {confirming === p.reference ? (
+                      <Button
+                        size="sm"
+                        className="bg-rose-600 text-white hover:bg-rose-700"
+                        onClick={async () => {
+                          setConfirming("");
+                          const res = await deletePartnershipApplication(p.reference);
+                          if (!res.ok) { setNotice(res.message || "Could not delete."); return; }
+                          setPartnerships((rows) => rows.filter((r) => r.reference !== p.reference));
+                          setNotice(`${p.reference} deleted.`);
+                        }}
+                      >
+                        Delete for good?
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setConfirming(p.reference)}
+                        className="text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                        aria-label={`Delete application ${p.reference}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <p className="mt-3 whitespace-pre-wrap border-t border-slate-100 pt-3 text-sm leading-relaxed text-slate-700">
                   {p.raw_message}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm">
-                  <a href={`mailto:${p.email}`} className="flex items-center gap-1.5 text-teal-700 hover:underline">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 text-teal-700 hover:underline"
+                    onClick={() => { window.location.href = `mailto:${p.email}`; }}
+                  >
                     <Mail className="h-3.5 w-3.5" />
                     {p.email}
-                  </a>
+                  </button>
                   {p.phone && (
                     <a href={`tel:${p.phone}`} className="flex items-center gap-1.5 text-teal-700 hover:underline">
                       <Phone className="h-3.5 w-3.5" />

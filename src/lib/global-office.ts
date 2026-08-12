@@ -166,6 +166,23 @@ function mapEnquiryToPipeline(status: string): SfoPipelineStatus {
   return "new";
 }
 
+export async function deletePartnershipApplication(
+  reference: string
+): Promise<{ ok: boolean; message?: string }> {
+  if (!supabase) return { ok: false, message: "Supabase is not configured." };
+
+  const { error } = await supabase.from("sfo_enquiries").delete().eq("reference", reference);
+  if (!error) return { ok: true };
+
+  const fallback = await supabase.from("enquiries").delete().eq("reference", reference);
+  if (!fallback.error) return { ok: true };
+
+  const viaRpc = await supabase.rpc("delete_enquiry", { p_reference: reference, p_reason: "staff partnership cleanup" });
+  if (!viaRpc.error) return { ok: true };
+
+  return { ok: false, message: error.message || fallback.error?.message || viaRpc.error?.message || "Could not delete." };
+}
+
 export async function updatePartnershipStatus(
   reference: string,
   status: SfoPipelineStatus
