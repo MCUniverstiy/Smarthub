@@ -46,6 +46,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatHKD } from "@/lib/booking-data";
+import { getManagedGlobalListings, removeGlobalListing, saveGlobalListing, setGlobalListingPublication } from "@/lib/global-office";
 import {
   BOOKING_STATUSES,
   ENQUIRY_STATUSES,
@@ -134,6 +135,15 @@ function prettyTime(t: string): string {
   return `${h12}:${m ?? "00"} ${suffix}`;
 }
 
+/** Shared frame for every admin state: setup, sign-in, access denial, and inbox. */
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <section className="bg-[#f6fafa] px-5 py-14 sm:px-6 sm:py-20">
+      <div className="mx-auto max-w-6xl">{children}</div>
+    </section>
+  );
+}
+
 export function AdminPage() {
   /** "checking" until we know whether someone is signed in and staff. */
   const [gate, setGate] = useState<"checking" | "signed-out" | "denied" | "ok">(
@@ -156,15 +166,11 @@ export function AdminPage() {
     rate: number;
     unit: "hour" | "day";
     features: string[];
+    status?: "draft" | "review" | "published" | "hidden" | "archived";
+    visibility?: boolean;
   };
 
-  const [globalOffices, setGlobalOffices] = useState<GlobalOffice[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const saved = localStorage.getItem("smarthub-global-offices");
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [globalOffices, setGlobalOffices] = useState<GlobalOffice[]>([]);
 
   const [newOffice, setNewOffice] = useState<Partial<GlobalOffice>>({
     name: "",
@@ -179,12 +185,14 @@ export function AdminPage() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const saveGlobalOffices = (offices: GlobalOffice[]) => {
-    setGlobalOffices(offices);
-    try { localStorage.setItem("smarthub-global-offices", JSON.stringify(offices)); } catch {}
-  };
+  const loadGlobalOffices = useCallback(async () => {
+    const rows = await getManagedGlobalListings();
+    setGlobalOffices(rows.map((row) => ({ id: row.id, name: row.name, country: row.country, city: row.city, description: row.description_html, capacity: row.capacity, rate: Number(row.rate), unit: row.rate_unit, features: row.amenities || [], status: row.status, visibility: row.visibility })));
+  }, []);
 
-  const addOrUpdateOffice = () => {
+  useEffect(() => { void loadGlobalOffices(); }, [loadGlobalOffices]);
+
+  const addOrUpdateOffice = async () => {
     if (!newOffice.name || !newOffice.city || !newOffice.description) {
       alert("Name, city and description are required.");
       return;
@@ -202,13 +210,13 @@ export function AdminPage() {
       features: Array.isArray(newOffice.features) ? newOffice.features : ["Private boardroom", "24/7 access"],
     };
 
-    let updated: GlobalOffice[];
-    if (editingId) {
-      updated = globalOffices.map(o => o.id === editingId ? office : o);
-    } else {
-      updated = [...globalOffices, office];
-    }
-    saveGlobalOffices(updated);
+    const saved = await saveGlobalListing({
+      id: editingId || undefined, name: office.name, country: office.country, city: office.city,
+      description_html: office.description, capacity: office.capacity, rate: office.rate,
+      rate_unit: office.unit, amenities: office.features,
+    });
+    if (!saved.ok) { alert(saved.message || "Could not save the listing. Run the global-office SQL migration first."); return; }
+    await loadGlobalOffices();
     setEditingId(null);
     setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, rate: 450, unit: "hour", features: ["Private boardroom", "24/7 access"] });
   };
@@ -218,10 +226,18 @@ export function AdminPage() {
     setNewOffice({ ...office });
   };
 
-  const deleteOffice = (id: string) => {
+  const deleteOffice = async (id: string) => {
     if (!confirm("Delete this global office listing?")) return;
-    const updated = globalOffices.filter(o => o.id !== id);
-    saveGlobalOffices(updated);
+    const result = await removeGlobalListing(id);
+    if (!result.ok) { alert(result.message || "Could not delete the listing."); return; }
+    await loadGlobalOffices();
+  };
+
+  const toggleOfficePublication = async (office: GlobalOffice) => {
+    const publish = !(office.status === "published" && office.visibility);
+    const result = await setGlobalListingPublication(office.id, publish);
+    if (!result.ok) { alert(result.message || "Could not update listing visibility."); return; }
+    await loadGlobalOffices();
   };
 
   const cancelEdit = () => {
@@ -823,7 +839,7 @@ export function AdminPage() {
         </div>
       )}
       </>
-      ) : (
+      ) : tab === "enquiries" ? (
       /* ---------------- Enquiries ---------------- */
       <>
       <div className="mb-6 flex flex-wrap gap-2">
@@ -973,6 +989,43 @@ export function AdminPage() {
         </div>
       )}
       </>
+      ) : (
+        <section className="space-y-6">
+          <div className="rounded-2xl border border-[#c8eeeb] bg-[#e2f7f5] p-5 text-sm text-[#1a2d2c]">
+            <p className="font-semibold">Global listing manager</p>
+            <p className="mt-1 text-[#4a5e5d]">Create and refine draft listings here. Run <code className="rounded bg-white px-1">supabase/global-office-platform.sql</code> before publishing to the global directory.</p>
+          </div>
+          <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <h2 className="font-display text-xl font-bold text-slate-900">{editingId ? "Edit draft office" : "New global office"}</h2>
+              <div className="mt-4 space-y-3">
+                <Input placeholder="Listing name" value={newOffice.name ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, name: e.target.value }))} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input placeholder="Country" value={newOffice.country ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, country: e.target.value }))} />
+                  <Input placeholder="City" value={newOffice.city ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, city: e.target.value }))} />
+                </div>
+                <textarea className="min-h-28 w-full rounded-md border border-slate-200 p-3 text-sm" placeholder="Public listing description" value={newOffice.description ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, description: e.target.value }))} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input type="number" min="1" placeholder="Capacity" value={newOffice.capacity ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, capacity: Number(e.target.value) }))} />
+                  <Input type="number" min="0" placeholder="HKD rate" value={newOffice.rate ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, rate: Number(e.target.value) }))} />
+                </div>
+                <Input placeholder="Amenities, comma separated" value={(newOffice.features ?? []).join(", ")} onChange={(e) => setNewOffice((v) => ({ ...v, features: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) }))} />
+                <div className="flex gap-2">
+                  <Button onClick={addOrUpdateOffice}>{editingId ? "Save draft" : "Create draft"}</Button>
+                  {editingId && <Button variant="outline" onClick={cancelEdit}>Cancel</Button>}
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <h2 className="font-display text-xl font-bold text-slate-900">Draft offices ({globalOffices.length})</h2>
+              {globalOffices.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No local drafts yet. Create one to prepare its content before database publishing is enabled.</p> : globalOffices.map((office) => (
+                <article key={office.id} className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><h3 className="font-semibold text-slate-900">{office.name}</h3><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${office.status === "published" && office.visibility ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{office.status === "published" && office.visibility ? "Live" : "Draft"}</span></div><p className="text-sm text-slate-500">{office.city}, {office.country} · {office.capacity} people · HK${office.rate}/{office.unit}</p></div><div className="flex flex-wrap justify-end gap-2"><Button size="sm" onClick={() => void toggleOfficePublication(office)} className={office.status === "published" && office.visibility ? "bg-slate-700 text-white hover:bg-slate-800" : "bg-[#148f8a] text-white hover:bg-[#1ab5ad]"}>{office.status === "published" && office.visibility ? "Hide" : "Publish"}</Button><Button size="sm" variant="outline" onClick={() => editOffice(office)}>Edit</Button><Button size="sm" variant="outline" className="text-rose-700" onClick={() => void deleteOffice(office.id)}>Delete</Button></div></div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
       )}
     </Shell>
   );

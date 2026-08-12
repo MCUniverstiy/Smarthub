@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLang } from "@/lib/i18n/lang-context";
 import { PageHero } from "@/components/blocks/page-hero";
 import { SectionHeading } from "@/components/blocks/section-heading";
@@ -23,9 +23,9 @@ import {
   MapPin, 
   CalendarDays 
 } from "lucide-react";
-import { RouterLink, hashQuery } from "@/lib/router";
+
 import { companyFacts } from "@/lib/site-data";
-import { submitEnquiry, isSupabaseConfigured } from "@/lib/supabase";
+import { searchGlobalListings, submitSfoEnquiry } from "@/lib/global-office";
 
 interface GlobalOffice {
   id: string;
@@ -42,6 +42,17 @@ interface GlobalOffice {
 
 // Sample global SFO offices (in real life loaded from admin / DB)
 const SAMPLE_GLOBAL_OFFICES: GlobalOffice[] = [
+  {
+    id: "hk-wc-1",
+    name: "Wan Chai SmartHub Business Centre",
+    country: "Hong Kong",
+    city: "Wan Chai",
+    description: "Professional meeting and private office space in Wan Chai, with reception support and flexible booking for visiting teams.",
+    capacity: 10,
+    rate: 500,
+    unit: "hour",
+    features: ["Meeting rooms", "Reception", "High-speed internet", "Central location"],
+  },
   {
     id: "sg-sfo-1",
     name: "Singapore Central SFO",
@@ -91,21 +102,30 @@ export function PartnershipPage() {
   });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [submittedRef, setSubmittedRef] = useState<string>("");
+  const [selectedRegion, setSelectedRegion] = useState("All locations");
 
   // Offices (merged sample + any created via admin later – for demo we use sample)
   const [globalOffices, setGlobalOffices] = useState<GlobalOffice[]>(SAMPLE_GLOBAL_OFFICES);
 
-  // Load offices created in Admin (localStorage)
+  // Production listings come from Supabase. Sample cards remain as a useful
+  // preview until the global-office migration has been run and listings published.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("smarthub-global-offices");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length) {
-          setGlobalOffices([...parsed, ...SAMPLE_GLOBAL_OFFICES]);
-        }
+    void searchGlobalListings().then((rows) => {
+      if (rows.length) {
+        setGlobalOffices(rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          country: row.country,
+          city: row.city,
+          description: row.description_html.replace(/<[^>]*>/g, "") || "Premium global office listing.",
+          capacity: row.capacity,
+          rate: Number(row.rate),
+          unit: row.rate_unit,
+          image: row.image_url || undefined,
+          features: row.amenities || [],
+        })));
       }
-    } catch {}
+    });
   }, []);
 
   const handleChange = (field: keyof typeof form, value: string) => {
@@ -121,18 +141,15 @@ export function PartnershipPage() {
 
     setStatus("sending");
 
-    const enquiryData = {
+    const result = await submitSfoEnquiry({
       fullName: form.fullName,
       email: form.email,
       phone: form.phone,
       company: form.company,
-      service: "partnership-sfo-global",
-      message: `PARTNERSHIP ENQUIRY — Global SFO Office\n\nCountry of interest: ${form.country || "Not specified"}\nPreferred location: ${form.officeLocation || "Any"}\n\n${form.message}`,
-      source: "partnership-page",
-      lang,
-    };
-
-    const result = await submitEnquiry(enquiryData);
+      country: form.country,
+      city: form.officeLocation,
+      message: form.message,
+    });
 
     if (result.ok) {
       setSubmittedRef(result.reference);
@@ -147,9 +164,14 @@ export function PartnershipPage() {
   const bookOffice = (office: GlobalOffice) => {
     // Navigate to booking with global office pre-selected via query
     if (typeof window !== "undefined") {
-      window.location.hash = `#/book?room=sg-sfo-1&global=${office.id}&location=${encodeURIComponent(office.country)}`;
+      window.location.hash = `#/book?global=${encodeURIComponent(office.id)}&location=${encodeURIComponent(office.country)}`;
     }
   };
+
+  const regions = ["All locations", ...Array.from(new Set(globalOffices.map((office) => office.country)))];
+  const visibleOffices = selectedRegion === "All locations"
+    ? globalOffices
+    : globalOffices.filter((office) => office.country === selectedRegion);
 
   return (
     <>
@@ -191,65 +213,6 @@ export function PartnershipPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* CURRENT GLOBAL OFFICES / LISTINGS */}
-      <section className="py-20 bg-slate-50">
-        <div className="mx-auto max-w-7xl px-6">
-          <SectionHeading
-            eyebrow="Live Global SFO Network"
-            title="Book premium offices around the world"
-            lead="These partner locations are already live. More offices are added daily by our partners and through the admin dashboard."
-            align="center"
-          />
-
-          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {globalOffices.map((office) => (
-              <div key={office.id} className="group flex flex-col overflow-hidden rounded-3xl border bg-white shadow-sm hover:shadow-xl transition">
-                <div className="relative h-48 bg-gradient-to-br from-teal-900/90 to-slate-900 flex items-center justify-center">
-                  <div className="text-center text-white">
-                    <MapPin className="mx-auto h-8 w-8 mb-2 text-teal-300" />
-                    <div className="font-display text-xl font-bold">{office.city}</div>
-                    <div className="text-sm opacity-80">{office.country}</div>
-                  </div>
-                  <div className="absolute top-4 right-4 bg-white/90 text-teal-800 px-3 py-1 rounded-full text-xs font-bold">
-                    {office.unit === "hour" ? `HK$${office.rate}/hr` : `HK$${office.rate}/day`}
-                  </div>
-                </div>
-
-                <div className="flex-1 p-6 flex flex-col">
-                  <h3 className="font-display text-xl font-bold text-slate-900">{office.name}</h3>
-                  <p className="mt-2 text-sm text-slate-600 line-clamp-3 flex-1">{office.description}</p>
-
-                  <div className="mt-4 flex flex-wrap gap-1">
-                    {office.features.slice(0, 3).map((f, i) => (
-                      <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-teal-50 text-teal-700 font-medium">
-                        {f}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="mt-5 flex items-center justify-between">
-                    <div className="text-xs text-slate-500">
-                      Up to <span className="font-semibold text-slate-800">{office.capacity}</span> people
-                    </div>
-                    <Button 
-                      size="sm" 
-                      onClick={() => bookOffice(office)}
-                      className="bg-teal-600 hover:bg-teal-700"
-                    >
-                      Book this office <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <p className="mt-8 text-center text-sm text-slate-500">
-            Want your city listed? Submit the form below and our team will review within 48 hours.
-          </p>
         </div>
       </section>
 
@@ -372,7 +335,7 @@ export function PartnershipPage() {
           </div>
 
           <div className="mt-8 text-center">
-            <p className="text-sm text-slate-600">Already a partner? Log in to the <RouterLink to="admin" className="font-semibold text-teal-600 underline">Admin Dashboard</RouterLink> to manage your offices.</p>
+            <p className="text-sm text-slate-600">Already a partner? Our team will contact you with the next steps for managing your office listing.</p>
           </div>
         </div>
       </section>

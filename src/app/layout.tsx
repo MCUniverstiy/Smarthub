@@ -23,7 +23,8 @@
  *   which is why it's the perfect place for fonts, SEO, and global providers.
  */
 import type { Metadata } from "next";
-import "@fontsource-variable/plus-jakarta-sans";
+import "@fontsource/playfair-display/600.css";
+import "@fontsource/playfair-display/700.css";
 import "@fontsource-variable/dm-sans";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";

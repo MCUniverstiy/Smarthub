@@ -49,7 +49,7 @@
   /* Font stacks: `font-sans` for body, `font-display` for headings, `font-mono` for code */
   --font-sans: var(--font-dm-sans-variable), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, monospace;
-  --font-display: var(--font-jakarta-variable), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-playfair-display), Georgia, serif;
 
   /* Sidebar tokens (used by shadcn/ui Sidebar component) */
   --color-sidebar-ring: var(--sidebar-ring);
@@ -110,76 +110,50 @@
  * These CSS variables are read by Tailwind via the @theme inline block
  * above. Change them ONCE here and every component updates.
  * ----------------------------------------------------------------- */
-:root {
-  /* Base border-radius for buttons, cards, etc. (0.875rem ≈ 14px) */
-  --radius: 0.875rem;
-
-  /* Page background + default text */
+ :root {
+  --radius: 0.75rem;
   --background: #ffffff;
-  --foreground: #0f1f2e;
-
-  /* Card surface */
+  --foreground: #1a2d2c;
   --card: #ffffff;
-  --card-foreground: #0f1f2e;
-
-  /* Popover (dropdown / dialog) surface */
+  --card-foreground: #1a2d2c;
   --popover: #ffffff;
-  --popover-foreground: #0f1f2e;
-
-  /* Teal primary — bright, fresh */
-  --primary: #0d9488;
+  --popover-foreground: #1a2d2c;
+  --primary: #1ab5ad;
   --primary-foreground: #ffffff;
-
-  /* Warm cream secondary */
-  --secondary: #fef7ed;
-  --secondary-foreground: #7c2d12;
-
-  /* Muted grey (used for hint text, disabled states) */
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-
-  /* Coral accent for CTAs */
-  --accent: #fb7185;
-  --accent-foreground: #1c1917;
-
-  /* Destructive (delete buttons, errors) */
-  --destructive: #dc2626;
-
-  /* Border + input border + focus ring */
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #14b8a6;
-
-  /* Chart palette — 5 colours for data visualisations */
-  --chart-1: #0d9488;
-  --chart-2: #fb7185;
-  --chart-3: #f59e0b;
-  --chart-4: #3b82f6;
-  --chart-5: #8b5cf6;
-
-  /* Sidebar palette (used by shadcn/ui Sidebar component) */
+  --secondary: #f6fafa;
+  --secondary-foreground: #1a2d2c;
+  --muted: #ebf2f1;
+  --muted-foreground: #5a706e;
+  --accent: #d4a94c;
+  --accent-foreground: #1a2d2c;
+  --destructive: #e04a3c;
+  --border: #ebf2f1;
+  --input: #cdd9d8;
+  --ring: #1ab5ad;
+  --chart-1: #1ab5ad;
+  --chart-2: #d4a94c;
+  --chart-3: #e04a3c;
+  --chart-4: #3dd4cc;
+  --chart-5: #148f8a;
   --sidebar: #ffffff;
-  --sidebar-foreground: #0f1f2e;
-  --sidebar-primary: #0d9488;
+  --sidebar-foreground: #1a2d2c;
+  --sidebar-primary: #1ab5ad;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0fdfa;
-  --sidebar-accent-foreground: #0f1f2e;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #14b8a6;
-
-  /* Custom brand tokens — used directly by non-shadcn components for
-     gradients, hero overlays, etc. */
-  --brand-teal: #0d9488;
-  --brand-teal-dark: #0f766e;
-  --brand-teal-light: #5eead4;
-  --brand-teal-50: #f0fdfa;
-  --brand-teal-100: #ccfbf1;
-  --brand-coral: #fb7185;
-  --brand-coral-dark: #e11d48;
-  --brand-amber: #f59e0b;
-  --brand-cream: #fef7ed;
-  --brand-mint: #ecfdf5;
-  --brand-navy: #0f1f2e;
+  --sidebar-accent: #e2f7f5;
+  --sidebar-accent-foreground: #1a2d2c;
+  --sidebar-border: #ebf2f1;
+  --sidebar-ring: #1ab5ad;
+  --brand-teal: #1ab5ad;
+  --brand-teal-dark: #148f8a;
+  --brand-teal-light: #7ae2dc;
+  --brand-teal-50: #e2f7f5;
+  --brand-teal-100: #c8eeeb;
+  --brand-coral: #e04a3c;
+  --brand-coral-dark: #c9382d;
+  --brand-amber: #d4a94c;
+  --brand-cream: #fbf4e2;
+  --brand-mint: #f6fafa;
+  --brand-navy: #148f8a;
 }
 
 /* -----------------------------------------------------------------
@@ -306,7 +280,7 @@ html {
  * transparent. Result: gradient-filled letters.
  * ----------------------------------------------------------------- */
 .text-gradient-teal {
-  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 50%, #5eead4 100%);
+  background: linear-gradient(135deg, #148f8a 0%, #1ab5ad 50%, #7ae2dc 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -321,9 +295,9 @@ html {
  * ----------------------------------------------------------------- */
 .hero-overlay {
   background: linear-gradient(180deg,
-    rgba(15, 31, 46, 0.85) 0%,
-    rgba(15, 31, 46, 0.55) 50%,
-    rgba(13, 148, 136, 0.45) 100%);
+    rgba(20, 143, 138, 0.88) 0%,
+    rgba(20, 143, 138, 0.64) 50%,
+    rgba(26, 181, 173, 0.48) 100%);
 }
 
 /* -----------------------------------------------------------------
@@ -338,11 +312,11 @@ html {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  border-bottom: 1px solid rgba(235, 242, 241, 0.9);
 }
 .glass-nav.scrolled {
   background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 4px 20px -8px rgba(15, 31, 46, 0.08);
+  box-shadow: 0 4px 20px -8px rgba(20, 143, 138, 0.10);
 }
 
 /* -----------------------------------------------------------------
@@ -357,7 +331,7 @@ html {
 }
 .lift-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 24px 48px -16px rgba(13, 148, 136, 0.18);
+  box-shadow: 0 24px 48px -16px rgba(26, 181, 173, 0.18);
 }
 
 /* -----------------------------------------------------------------
@@ -410,3 +384,8 @@ html {
 .pulse-dot {
   animation: pulse-dot 2s ease-in-out infinite;
 }
+
+/* SmartHub Connect reference-site refinements */
+.font-display { font-family: var(--font-playfair-display), Georgia, serif; font-weight: 600; }
+main { overflow: clip; }
+::selection { background: #e2f7f5; color: #148f8a; }

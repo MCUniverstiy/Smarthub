@@ -41,6 +41,8 @@ import Image from "next/image";
 import { useLang } from "@/lib/i18n/lang-context";
 import { PageHero } from "@/components/blocks/page-hero";
 import { SectionHeading } from "@/components/blocks/section-heading";
+import { GlobalOfficeDirectory } from "@/components/blocks/global-office-directory";
+import { searchGlobalListings, submitGlobalBookingRequest, type GlobalListing } from "@/lib/global-office";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -77,7 +79,6 @@ import {
   buildPrefillUrl,
   earliestBookingDate,
   estimateCost,
-  formatHKD,
   formatTime12,
   getRoom,
   googleFormViewUrl,
@@ -171,6 +172,11 @@ function fill(template: string, values: Record<string, string | number>): string
 export function BookingPage() {
   const { t, lang } = useLang();
   const b = t.booking;
+  const [selectedOfficeLocation, setSelectedOfficeLocation] = useState("Hong Kong");
+  const [globalListings, setGlobalListings] = useState<GlobalListing[]>([]);
+  const [globalListingId, setGlobalListingId] = useState("");
+  const isGlobalBooking = selectedOfficeLocation !== "Hong Kong";
+  const selectedGlobalListing = globalListings.find((listing) => listing.id === globalListingId);
 
   // Lazy initialiser: seed the form from the URL so `#/book?room=event-space`
   // opens with that room preselected. Reading the hash here (rather than in
@@ -190,6 +196,12 @@ export function BookingPage() {
   );
   const [submitted, setSubmitted] = useState<BookingSubmission | null>(null);
   const [prefillUrl, setPrefillUrl] = useState<string>("");
+
+  useEffect(() => {
+    setGlobalListingId("");
+    if (selectedOfficeLocation === "Hong Kong") { setGlobalListings([]); return; }
+    void searchGlobalListings({ country: selectedOfficeLocation }).then(setGlobalListings);
+  }, [selectedOfficeLocation]);
 
   /**
    * Booking reference returned by the database (e.g. "SH-2608-4KQ9TW").
@@ -399,19 +411,17 @@ export function BookingPage() {
       e.endTime = err.endBeforeStart;
     }
 
-    if (!form.roomId) e.roomId = err.room;
+    if (isGlobalBooking ? !globalListingId : !form.roomId) e.roomId = err.room;
 
     const attendees = Number(form.attendees);
     if (!form.attendees.trim() || !Number.isFinite(attendees) || attendees < 1) {
       e.attendees = err.attendees;
-    } else if (selectedRoom && attendees > selectedRoom.capacity) {
-      e.attendees = fill(err.attendeesOverCapacity, {
-        room: selectedRoom.name[lang],
-        n: selectedRoom.capacity,
-      });
+    } else if ((selectedRoom && attendees > selectedRoom.capacity) || (selectedGlobalListing && attendees > selectedGlobalListing.capacity)) {
+      const capacity = selectedRoom?.capacity ?? selectedGlobalListing?.capacity ?? 0;
+      e.attendees = fill(err.attendeesOverCapacity, { room: selectedRoom?.name[lang] ?? selectedGlobalListing?.name ?? "office", n: capacity });
     }
 
-    if (!form.payment) e.payment = err.payment;
+    if (!isGlobalBooking && !form.payment) e.payment = err.payment;
 
     return e;
   }
@@ -436,6 +446,16 @@ export function BookingPage() {
     if (Object.keys(found).length > 0) {
       formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
+    }
+
+    if (isGlobalBooking && selectedGlobalListing) {
+      setStatus("sending");
+      const result = await submitGlobalBookingRequest({
+        listingId: selectedGlobalListing.id, fullName: form.fullName.trim(), email: form.email.trim(), phone: form.phone.trim(), company: form.company.trim(),
+        startsAt: new Date(`${form.date}T${form.startTime}:00`).toISOString(), endsAt: new Date(`${form.date}T${form.endTime}:00`).toISOString(), attendees: Number(form.attendees),
+      });
+      if (!result.ok) { setErrors({ roomId: result.message }); setStatus("idle"); return; }
+      setReference(result.reference); setStatus("success"); setSubmitted({ ...form, roomId: "" as RoomId, attendees: form.attendees, payment: "" as PaymentMethodId }); setForm(EMPTY_FORM); return;
     }
 
     const payload: BookingSubmission = {
@@ -616,7 +636,7 @@ export function BookingPage() {
                     value={reference}
                   />
                 )}
-                <SummaryRow label={b.summaryRoom} value={room ? room.name[lang] : "—"} />
+                <SummaryRow label={b.summaryRoom} value={room ? room.name[lang] : selectedGlobalListing?.name ?? "—"} />
                 <SummaryRow label={b.summaryDate} value={formatDate(submitted.date)} />
                 <SummaryRow
                   label={b.summaryTime}
@@ -629,9 +649,7 @@ export function BookingPage() {
                     PAYMENT_METHODS.find((p) => p.id === submitted.payment)?.label[lang] ?? "—"
                   }
                 />
-                {cost && (
-                  <SummaryRow label={b.summaryEstimate} value={formatHKD(cost.total)} />
-                )}
+                <SummaryRow label="Availability" value="Our team will confirm availability and terms." />
               </dl>
             </div>
 
@@ -694,16 +712,20 @@ export function BookingPage() {
         </div>
       </section>
 
-      {/* ===== ROOM CATALOGUE ===== */}
+      {/* Global locations come first. The Hong Kong room catalogue below remains
+          the local booking experience. */}
+      <GlobalOfficeDirectory onLocationChange={setSelectedOfficeLocation} />
+
+      {/* ===== HONG KONG ROOM CATALOGUE ===== */}
       {/* Six selectable cards. Clicking one sets `form.roomId`, updates the
           URL (`?room=...`) and scrolls to the form. The selected card gets
           a teal ring so the choice stays visible while scrolling. */}
-      <section className="bg-gradient-to-b from-white via-teal-50/30 to-white py-20 lg:py-24">
+      {selectedOfficeLocation === "Hong Kong" && <section className="bg-gradient-to-b from-white via-teal-50/30 to-white py-20 lg:py-24">
         <div className="mx-auto max-w-7xl px-6">
           <SectionHeading
-            eyebrow={b.roomsEyebrow}
-            title={b.roomsTitle}
-            lead={b.roomsLead}
+            eyebrow="Hong Kong offices"
+            title="Available Spaces"
+            lead="Six rooms. One Wan Chai address. Select a room to request a booking."
             align="center"
           />
 
@@ -729,10 +751,6 @@ export function BookingPage() {
                       className="object-cover transition duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/45 to-transparent" />
-                    <span className="absolute right-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-teal-700 shadow-sm backdrop-blur">
-                      {formatHKD(room.rate)}
-                      {room.unit === "hour" ? b.perHour : b.perDay}
-                    </span>
                     {isSelected && (
                       <span className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full bg-teal-600 px-3 py-1 text-xs font-bold text-white shadow-sm">
                         <CheckCircle2 className="h-3 w-3" />
@@ -772,7 +790,7 @@ export function BookingPage() {
             })}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* ===== BOOKING FORM + LIVE SUMMARY ===== */}
       <section ref={formRef} id="booking-form" className="scroll-mt-24 bg-white py-20 lg:py-24">
@@ -1017,19 +1035,16 @@ export function BookingPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label={b.form.room} htmlFor="room" error={errors.roomId} required>
                     <Select
-                      value={form.roomId}
-                      onValueChange={(v) => update("roomId", v as RoomId)}
+                      value={isGlobalBooking ? globalListingId : form.roomId}
+                      onValueChange={(v) => isGlobalBooking ? setGlobalListingId(v) : update("roomId", v as RoomId)}
                     >
                       <SelectTrigger id="room" className="w-full">
                         <SelectValue placeholder={b.form.chooseRoom} />
                       </SelectTrigger>
                       <SelectContent>
-                        {ROOMS.map((room) => (
-                          <SelectItem key={room.id} value={room.id}>
-                            {room.emoji} {room.name[lang]} · {formatHKD(room.rate)}
-                            {room.unit === "hour" ? b.perHour : b.perDay}
-                          </SelectItem>
-                        ))}
+                        {isGlobalBooking
+                          ? globalListings.map((listing) => <SelectItem key={listing.id} value={listing.id}>{listing.name} · {listing.city}</SelectItem>)
+                          : ROOMS.map((room) => <SelectItem key={room.id} value={room.id}>{room.emoji} {room.name[lang]}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </Field>
@@ -1200,13 +1215,8 @@ export function BookingPage() {
                         }
                       />
                       <SummaryRow label={b.summaryAttendees} value={form.attendees || "—"} />
-                      <div className="flex items-baseline justify-between gap-4 bg-teal-50/50 px-6 py-4">
-                        <dt className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                          {b.summaryEstimate}
-                        </dt>
-                        <dd className="font-display text-2xl font-bold text-teal-700">
-                          {estimate ? formatHKD(estimate.total) : "—"}
-                        </dd>
+                      <div className="bg-teal-50/50 px-6 py-4 text-sm font-semibold text-teal-800">
+                        Final availability and booking terms will be confirmed by our team.
                       </div>
                     </dl>
                   )}

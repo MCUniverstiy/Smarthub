@@ -26,7 +26,6 @@
  * ============================================================================
  */
 
-import Image from "next/image";
 import { ReactNode } from "react";
 
 /**
@@ -51,7 +50,6 @@ export function PageHero({
   eyebrow,
   title,
   lead,
-  image,
   align = "left",
   height = "md",
 }: {
@@ -77,31 +75,11 @@ export function PageHero({
     // `relative isolate` creates a new stacking context so absolutely
     // positioned children (the image and overlay) stay scoped to this
     // section. `overflow-hidden` clips the wave SVG cleanly at the edges.
-    <section className={`relative isolate overflow-hidden bg-slate-900 ${heights[height]}`}>
-      {/* ============== BACKGROUND IMAGE + OVERLAY ============== */}
-      {/* The image and gradient sit in a div absolutely positioned to fill
-          the section (`absolute inset-0`). `-z-10` puts them behind the
-          text content. */}
-      <div className="absolute inset-0 -z-10">
-        {/* Next.js <Image> with `fill` makes it cover the parent. `priority`
-            tells Next.js to lazy-load-disable this image (load it
-            immediately) because it's above the fold. `sizes="100vw"` hints
-            to the browser that the image will be rendered at viewport width,
-            which helps it pick the right image size from the srcset. */}
-        <Image
-          src={image}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
-        {/* Dark teal-tinted gradient overlay — sits on top of the image to
-            guarantee white text remains readable regardless of which image
-            is used. The three-stop gradient (slate/teal) gives a subtle
-            teal brand tint. */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/75 to-teal-900/70" />
-      </div>
+    <section className={`relative isolate overflow-hidden bg-[#1ab5ad] ${heights[height]}`}>
+      {/* The official site uses a confident solid-teal interior hero with
+          two barely-there circular outlines rather than a photo overlay. */}
+      <div aria-hidden className="absolute -right-48 -top-48 h-[600px] w-[600px] rounded-full border border-white/15" />
+      <div aria-hidden className="absolute -right-36 -top-36 h-[500px] w-[500px] rounded-full border border-white/10" />
 
       {/* ============== CONTENT CONTAINER ============== */}
       {/* `max-w-7xl px-6` is the standard site container width. When
