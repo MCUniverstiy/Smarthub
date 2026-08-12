@@ -107,7 +107,7 @@ export function Footer() {
               <div className="font-display text-base font-bold text-white">
                 {t.footer.ctaTitle}
               </div>
-              <div className="text-xs text-slate-400">{t.footer.ctaBody}</div>
+              <div className="text-xs text-white/75">{t.footer.ctaBody}</div>
             </div>
           </div>
           {/* Right: gradient WhatsApp button — uses companyFacts.whatsappUrl
@@ -152,23 +152,23 @@ export function Footer() {
               />
               <div className="flex flex-col leading-tight">
                 <span className="font-display text-base font-bold text-white">
-                  Smarthub<span className="text-teal-400"> Connect</span>
+                  Smarthub<span className="text-[#7ae2dc]"> Connect</span>
                 </span>
-                <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500">
+                <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/60">
                   Hong Kong · Wan Chai
                 </span>
               </div>
             </RouterLink>
             {/* Tagline paragraph from translations. */}
-            <p className="mt-5 max-w-md text-sm leading-relaxed text-slate-400">
+            <p className="mt-5 max-w-md text-sm leading-relaxed text-white/75">
               {t.footer.tagline}
             </p>
 
             {/* TCSP licence badge — pulls the licence number from
                 companyFacts so it stays in sync with the rest of the site. */}
-            <div className="mt-6 inline-flex items-center gap-2 rounded-lg border border-teal-500/20 bg-teal-500/5 px-3 py-2 text-xs">
-              <ShieldCheck className="h-3.5 w-3.5 text-teal-400" />
-              <span className="font-semibold text-teal-300">
+            <div className="mt-6 inline-flex items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-xs">
+              <ShieldCheck className="h-3.5 w-3.5 text-[#7ae2dc]" />
+              <span className="font-semibold text-[#e2f7f5]">
                 TCSP Licensed · {companyFacts.tcspLicence}
               </span>
             </div>
@@ -176,7 +176,7 @@ export function Footer() {
 
           {/* ---------- EXPLORE COLUMN ---------- */}
           <div>
-            <h4 className="font-display text-xs font-bold uppercase tracking-wider text-slate-300">
+            <h4 className="font-display text-xs font-bold uppercase tracking-wider text-white">
               {t.footer.explore}
             </h4>
             {/* Each link is a RouterLink so navigation is instant (no full
@@ -184,7 +184,7 @@ export function Footer() {
             <ul className="mt-4 space-y-2.5 text-sm">
               {exploreLinks.map((l, i) => (
                 <li key={i}>
-                  <RouterLink to={l.to} className="transition hover:text-teal-400 focus:outline-none focus:text-teal-400">
+                  <RouterLink to={l.to} className="transition hover:text-[#7ae2dc] focus:outline-none focus:text-[#7ae2dc]">
                     {l.label}
                   </RouterLink>
                 </li>
@@ -194,13 +194,13 @@ export function Footer() {
 
           {/* ---------- LEGAL COLUMN ---------- */}
           <div>
-            <h4 className="font-display text-xs font-bold uppercase tracking-wider text-slate-300">
+            <h4 className="font-display text-xs font-bold uppercase tracking-wider text-white">
               {t.footer.legal}
             </h4>
             <ul className="mt-4 space-y-2.5 text-sm">
               {legalLinks.map((l, i) => (
                 <li key={i}>
-                  <RouterLink to={l.to} className="transition hover:text-teal-400 focus:outline-none focus:text-teal-400">
+                  <RouterLink to={l.to} className="transition hover:text-[#7ae2dc] focus:outline-none focus:text-[#7ae2dc]">
                     {l.label}
                   </RouterLink>
                 </li>
@@ -212,19 +212,19 @@ export function Footer() {
           {/* Shows the real contact details from companyFacts. Each row is a
               clickable link (tel:, wa.me, mailto:) where appropriate. */}
           <div>
-            <h4 className="font-display text-xs font-bold uppercase tracking-wider text-slate-300">
+            <h4 className="font-display text-xs font-bold uppercase tracking-wider text-white">
               {t.footer.connect}
             </h4>
             <ul className="mt-4 space-y-3 text-sm">
               {/* Address — not clickable, just text with a MapPin icon. */}
               <li className="flex items-start gap-2.5">
-                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-400" />
+                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#7ae2dc]" />
                 <span>{companyFacts.address}</span>
               </li>
               {/* Phone — tel: link, with whitespace stripped from the number. */}
               <li>
-                <a href={`tel:${companyFacts.phone.replace(/\s/g, "")}`} className="flex items-center gap-2.5 transition hover:text-teal-400">
-                  <Phone className="h-3.5 w-3.5 text-teal-400" />
+                <a href={`tel:${companyFacts.phone.replace(/\s/g, "")}`} className="flex items-center gap-2.5 transition hover:text-[#7ae2dc]">
+                  <Phone className="h-3.5 w-3.5 text-[#7ae2dc]" />
                   {companyFacts.phone}
                 </a>
               </li>
@@ -235,16 +235,16 @@ export function Footer() {
                   href={companyFacts.whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 transition hover:text-teal-400"
+                  className="flex items-center gap-2.5 transition hover:text-[#7ae2dc]"
                 >
-                  <MessageCircle className="h-3.5 w-3.5 text-teal-400" />
+                  <MessageCircle className="h-3.5 w-3.5 text-[#7ae2dc]" />
                   WhatsApp 5501 3516
                 </a>
               </li>
               {/* Email — mailto: link. */}
               <li>
-                <a href={`mailto:${companyFacts.email}`} className="flex items-center gap-2.5 transition hover:text-teal-400">
-                  <Mail className="h-3.5 w-3.5 text-teal-400" />
+                <a href={`mailto:${companyFacts.email}`} className="flex items-center gap-2.5 transition hover:text-[#7ae2dc]">
+                  <Mail className="h-3.5 w-3.5 text-[#7ae2dc]" />
                   {companyFacts.email}
                 </a>
               </li>
@@ -254,21 +254,21 @@ export function Footer() {
 
         {/* ============== LEGAL NOTE ============== */}
         {/* Small-print disclaimer paragraph above the bottom bar. */}
-        <p className="mt-12 border-t border-white/5 pt-6 text-[11px] leading-relaxed text-slate-500">
+        <p className="mt-12 border-t border-white/5 pt-6 text-[11px] leading-relaxed text-white/60">
           {t.footer.note}
         </p>
 
         {/* ============== BOTTOM BAR ============== */}
         {/* Copyright line on the left, group/domain badges on the right.
             The year is computed at render time with `new Date().getFullYear()`. */}
-        <div className="mt-6 flex flex-col items-center justify-between gap-3 text-xs text-slate-500 sm:flex-row">
+        <div className="mt-6 flex flex-col items-center justify-between gap-3 text-xs text-white/60 sm:flex-row">
           <div>
             © {new Date().getFullYear()} {companyFacts.legalName}. {t.footer.rights}
           </div>
           <div className="flex items-center gap-4">
             {/* Green dot + "MCM Group Member" badge. */}
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#7ae2dc]" />
               MCM Group Member
             </span>
             {/* Domain name shown for trust. */}
