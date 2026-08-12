@@ -6,6 +6,15 @@ Built with Next.js 16 + TypeScript + Tailwind CSS 4 + shadcn/ui. Design inspired
 
 ---
 
+## 🤖 Using an AI coding assistant on this repo?
+
+Point it at **[`readmeforAI.md`](./readmeforAI.md)** first. It covers the
+non-obvious things that break: the hash router, the two separate room systems,
+the trilingual requirement, the no-database fallback, and which lint/TS errors
+are pre-existing noise.
+
+---
+
 ## 🚀 Want to deploy this to Vercel?
 
 **Read [DEPLOYMENT.md](./DEPLOYMENT.md)** — it's a step-by-step guide for pushing to GitHub and going live on Vercel. No prior deployment experience needed.
