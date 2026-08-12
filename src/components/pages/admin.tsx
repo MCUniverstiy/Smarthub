@@ -905,21 +905,11 @@ export function AdminPage() {
                   </div>
                   <div className="relative z-10 flex flex-wrap gap-2">
                     <a
-                      href={`mailto:${encodeURIComponent(p.email)}?subject=${encodeURIComponent(`Re: your SmartHub partnership application (${p.reference})`)}&body=${encodeURIComponent(`Hi ${p.full_name},\n\nThank you for applying to host your office with SmartHub.\n\n`)}`}
+                      href={`mailto:${p.email}`}
                       className="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                     >
                       <Mail className="mr-1.5 h-3.5 w-3.5" /> Reply
                     </a>
-                    <button
-                      type="button"
-                      className="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                      onClick={async () => {
-                        try { await navigator.clipboard.writeText(p.email); } catch { /* ignore */ }
-                        setNotice(`Applicant email: ${p.email} (copied if the browser allowed).`);
-                      }}
-                    >
-                      Copy email
-                    </button>
                     {p.pipeline_status !== "approved" && (
                       <button
                         type="button"
