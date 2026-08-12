@@ -37,7 +37,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { useLang } from "@/lib/i18n/lang-context";
 import { PageHero } from "@/components/blocks/page-hero";
 import { SectionHeading } from "@/components/blocks/section-heading";
