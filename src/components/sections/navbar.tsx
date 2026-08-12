@@ -144,11 +144,11 @@ export function Navbar() {
       >
         {/* Centered content row: max-w-7xl container with logo on the left
             and nav/actions on the right. */}
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-3.5">
+        <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-4 px-5 py-3.5 sm:px-6">
           {/* ---------- LOGO ---------- */}
           {/* Uses RouterLink so clicking it navigates to the home route
               without a full page reload. The "S" tile is a CSS gradient square. */}
-          <RouterLink to="home" className="flex items-center gap-2.5" aria-label="Smarthub Connect home">
+          <RouterLink to="home" className="flex shrink-0 items-center gap-2.5" aria-label="Smarthub Connect home">
             <img 
               src="/smarthub-logo.png"
               alt="Smarthub Connect"
@@ -168,14 +168,14 @@ export function Navbar() {
           {/* Each link is highlighted with teal background when its `to`
               matches the current `route`. The `route` value comes from our
               custom hash-based router. */}
-          <nav className="hidden items-center gap-1 lg:flex">
+          <nav className="hidden min-w-0 flex-1 items-center justify-end gap-0 xl:flex">
             {navLinks.map((link) => (
               <RouterLink
                 key={link.to}
                 to={link.to}
-                className={`relative px-3 py-2 text-[15px] font-medium transition after:absolute after:bottom-0 after:left-3 after:h-0.5 after:w-0 after:bg-[#d4a94c] after:transition-all hover:after:w-[calc(100%-24px)] ${
+                className={`relative whitespace-nowrap px-2.5 py-2 text-[13px] font-medium transition after:absolute after:bottom-0 after:left-3 after:h-0.5 after:w-0 after:bg-[#d4a94c] after:transition-all hover:after:w-[calc(100%-20px)] ${
                   route === link.to
-                    ? "text-[#148f8a] after:w-[calc(100%-24px)]"
+                    ? "text-[#148f8a] after:w-[calc(100%-20px)]"
                     : "text-[#1a2d2c] hover:text-[#148f8a]"
                 }`}
               >
@@ -187,7 +187,7 @@ export function Navbar() {
           {/* ---------- RIGHT SIDE ACTIONS ---------- */}
           {/* Contains the language switcher, the "Get Started" CTA button
               (hidden on very small screens), and the hamburger menu button. */}
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {/* Language dropdown — EN / 繁 / 简 */}
             <LanguageSwitcher />
             {/* Primary CTA button. `asChild` makes the Button component merge
@@ -201,14 +201,14 @@ export function Navbar() {
               asChild
               size="sm"
               variant="outline"
-              className="hidden border-[#1ab5ad] text-[#148f8a] hover:bg-[#e2f7f5] lg:inline-flex"
+              className="hidden whitespace-nowrap border-[#1ab5ad] text-[#148f8a] hover:bg-[#e2f7f5] 2xl:inline-flex"
             >
               <RouterLink to="contact">{t.nav.cta}</RouterLink>
             </Button>
             <Button
               asChild
               size="sm"
-              className="hidden bg-[#e04a3c] text-white shadow-none hover:bg-[#e8665a] sm:inline-flex"
+              className="hidden whitespace-nowrap bg-[#e04a3c] text-white shadow-none hover:bg-[#e8665a] sm:inline-flex"
             >
               <RouterLink to="book">
                 {t.booking.ctaShort}
@@ -227,7 +227,7 @@ export function Navbar() {
               <SheetTrigger asChild>
                 <button
                   aria-label="Open menu"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700 lg:hidden"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700 xl:hidden"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
