@@ -143,7 +143,91 @@ export function AdminPage() {
   const [enquiries, setEnquiries] = useState<InboxEnquiry[]>([]);
   // Which inbox is on screen. Bookings first: they are time-critical in a
   // way that an enquiry is not.
-  const [tab, setTab] = useState<"bookings" | "enquiries">("bookings");
+  const [tab, setTab] = useState<"bookings" | "enquiries" | "global-offices">("bookings");
+
+  // ===== GLOBAL OFFICES (SFO Partnership) management =====
+  type GlobalOffice = {
+    id: string;
+    name: string;
+    country: string;
+    city: string;
+    description: string;
+    capacity: number;
+    rate: number;
+    unit: "hour" | "day";
+    features: string[];
+  };
+
+  const [globalOffices, setGlobalOffices] = useState<GlobalOffice[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem("smarthub-global-offices");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const [newOffice, setNewOffice] = useState<Partial<GlobalOffice>>({
+    name: "",
+    country: "Singapore",
+    city: "",
+    description: "",
+    capacity: 8,
+    rate: 450,
+    unit: "hour",
+    features: ["Private boardroom", "24/7 access", "Compliance support"],
+  });
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const saveGlobalOffices = (offices: GlobalOffice[]) => {
+    setGlobalOffices(offices);
+    try { localStorage.setItem("smarthub-global-offices", JSON.stringify(offices)); } catch {}
+  };
+
+  const addOrUpdateOffice = () => {
+    if (!newOffice.name || !newOffice.city || !newOffice.description) {
+      alert("Name, city and description are required.");
+      return;
+    }
+
+    const office: GlobalOffice = {
+      id: editingId || `sfo-${Date.now()}`,
+      name: newOffice.name!,
+      country: newOffice.country || "Singapore",
+      city: newOffice.city!,
+      description: newOffice.description!,
+      capacity: Number(newOffice.capacity) || 8,
+      rate: Number(newOffice.rate) || 450,
+      unit: newOffice.unit || "hour",
+      features: Array.isArray(newOffice.features) ? newOffice.features : ["Private boardroom", "24/7 access"],
+    };
+
+    let updated: GlobalOffice[];
+    if (editingId) {
+      updated = globalOffices.map(o => o.id === editingId ? office : o);
+    } else {
+      updated = [...globalOffices, office];
+    }
+    saveGlobalOffices(updated);
+    setEditingId(null);
+    setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, rate: 450, unit: "hour", features: ["Private boardroom", "24/7 access"] });
+  };
+
+  const editOffice = (office: GlobalOffice) => {
+    setEditingId(office.id);
+    setNewOffice({ ...office });
+  };
+
+  const deleteOffice = (id: string) => {
+    if (!confirm("Delete this global office listing?")) return;
+    const updated = globalOffices.filter(o => o.id !== id);
+    saveGlobalOffices(updated);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, rate: 450, unit: "hour", features: ["Private boardroom", "24/7 access"] });
+  };
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<BookingStatus | "all">("pending");
   const [enquiryFilter, setEnquiryFilter] = useState<EnquiryStatus | "all">("new");
@@ -544,7 +628,7 @@ export function AdminPage() {
       {/* Which inbox. Bookings and enquiries are different jobs, so they
           get separate lists rather than one merged feed. */}
       <div className="mb-5 flex gap-1 rounded-full bg-slate-100 p-1">
-        {(["bookings", "enquiries"] as const).map((key) => (
+        {(["bookings", "enquiries", "global-offices"] as const).map((key) => (
           <button
             key={key}
             onClick={() => setTab(key)}
@@ -554,7 +638,7 @@ export function AdminPage() {
                 : "text-slate-500 hover:text-slate-800"
             }`}
           >
-            {key}
+            {key === "global-offices" ? "Global SFO Offices" : key}
             {key === "bookings" && counts.pending > 0 && (
               <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
                 {counts.pending}
@@ -894,11 +978,3 @@ export function AdminPage() {
   );
 }
 
-/** Plain page frame — no marketing hero; this is an internal tool. */
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <section className="min-h-screen bg-slate-50 py-12 lg:py-16">
-      <div className="mx-auto max-w-5xl px-6">{children}</div>
-    </section>
-  );
-}

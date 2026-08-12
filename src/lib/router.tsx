@@ -65,6 +65,7 @@ export type Route =
   | "complaints"
   | "disclosures"
   | "admin"
+  | "partnership"
   | "not-found";
 
 /**
@@ -89,6 +90,7 @@ const ROUTE_MAP: Record<string, Route> = {
   "/complaints": "complaints",
   "/disclosures": "disclosures",
   "/admin": "admin",
+  "/partnership": "partnership",
 };
 
 /**
@@ -110,6 +112,7 @@ const REVERSE_MAP: Record<Route, string> = {
   complaints: "/complaints",
   disclosures: "/disclosures",
   admin: "/admin",
+  partnership: "/partnership",
   "not-found": "/not-found",
 };
 
