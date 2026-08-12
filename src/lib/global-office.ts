@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase, submitEnquiry } from "./supabase";
 
 /** Public-safe fields returned by the global listing search RPC. */
 export type GlobalListing = {
@@ -49,9 +49,20 @@ export type SfoEnquiryInput = {
   message?: string;
 };
 
-/** Sends the partnership form to the dedicated SFO pipeline. */
+/**
+ * Sends a company application to host offices with SmartHub.
+ * Prefers `submit_sfo_enquiry`. If that SQL is missing, stores the
+ * same lead in `enquiries` with source=partnership-page.
+ */
 export async function submitSfoEnquiry(input: SfoEnquiryInput): Promise<{ ok: true; reference: string } | { ok: false; message: string }> {
   if (!supabase) return { ok: false, message: "The enquiry service is not configured yet." };
+
+  const composed = [
+    input.message?.trim() || "(No additional message)",
+    input.country ? `Country: ${input.country}` : "",
+    input.city ? `Preferred office city: ${input.city}` : "",
+  ].filter(Boolean).join("\n");
+
   const { data, error } = await supabase.rpc("submit_sfo_enquiry", {
     p_full_name: input.fullName,
     p_email: input.email,
@@ -62,9 +73,144 @@ export async function submitSfoEnquiry(input: SfoEnquiryInput): Promise<{ ok: tr
     p_message: input.message || "",
   });
   const row = Array.isArray(data) ? data[0] : data;
-  return error || !row?.reference
-    ? { ok: false, message: error?.message || "No enquiry reference was returned." }
-    : { ok: true, reference: String(row.reference) };
+  if (!error && row?.reference) {
+    return { ok: true, reference: String(row.reference) };
+  }
+
+  const fallback = await submitEnquiry({
+    fullName: input.fullName,
+    email: input.email,
+    phone: input.phone,
+    company: input.company,
+    service: "office-hosting-partnership",
+    message: composed,
+    source: "partnership-page",
+  });
+  if (fallback.ok) return { ok: true, reference: fallback.reference };
+
+  return {
+    ok: false,
+    message: error?.message || fallback.message || "Could not submit the application.",
+  };
+}
+
+export type SfoPipelineStatus =
+  | "new"
+  | "qualified"
+  | "description-review"
+  | "approved"
+  | "converted"
+  | "closed"
+  | "spam";
+
+export type PartnershipApplication = {
+  id?: string;
+  reference: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  company: string;
+  country: string | null;
+  city: string | null;
+  raw_message: string;
+  pipeline_status: SfoPipelineStatus;
+  created_at: string;
+  source?: string;
+};
+
+export async function fetchPartnershipApplications(): Promise<PartnershipApplication[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("sfo_enquiries")
+    .select("id,reference,full_name,email,phone,company,country,city,raw_message,pipeline_status,created_at")
+    .order("created_at", { ascending: false })
+    .limit(300);
+  if (!error && Array.isArray(data)) {
+    return data as PartnershipApplication[];
+  }
+
+  const { data: fallback } = await supabase
+    .from("enquiries_inbox")
+    .select("*")
+    .eq("source", "partnership-page")
+    .limit(300);
+  return (fallback ?? []).map((row: {
+    reference: string;
+    full_name: string;
+    email: string;
+    phone: string | null;
+    company: string | null;
+    message: string;
+    status: string;
+    created_at: string;
+    source: string;
+  }) => ({
+    reference: row.reference,
+    full_name: row.full_name,
+    email: row.email,
+    phone: row.phone,
+    company: row.company || "",
+    country: null,
+    city: null,
+    raw_message: row.message,
+    pipeline_status: mapEnquiryToPipeline(row.status),
+    created_at: row.created_at,
+    source: row.source,
+  }));
+}
+
+function mapEnquiryToPipeline(status: string): SfoPipelineStatus {
+  if (status === "spam") return "spam";
+  if (status === "closed") return "closed";
+  if (status === "replied" || status === "in-progress") return "qualified";
+  return "new";
+}
+
+export async function deletePartnershipApplication(
+  reference: string
+): Promise<{ ok: boolean; message?: string }> {
+  if (!supabase) return { ok: false, message: "Supabase is not configured." };
+
+  const rpc = await supabase.rpc("delete_sfo_enquiry", { p_reference: reference });
+  if (!rpc.error) return { ok: true };
+
+  const direct = await supabase.from("sfo_enquiries").delete().eq("reference", reference).select("reference");
+  if (!direct.error && (direct.data?.length ?? 0) > 0) return { ok: true };
+
+  const viaEnquiry = await supabase.rpc("delete_enquiry", { p_reference: reference, p_reason: "staff partnership cleanup" });
+  if (!viaEnquiry.error) return { ok: true };
+
+  return {
+    ok: false,
+    message:
+      rpc.error?.message ||
+      direct.error?.message ||
+      viaEnquiry.error?.message ||
+      "Could not delete this application. Run the latest global-office SQL so staff can delete.",
+  };
+}
+
+export async function updatePartnershipStatus(
+  reference: string,
+  status: SfoPipelineStatus
+): Promise<{ ok: boolean; message?: string }> {
+  if (!supabase) return { ok: false, message: "Supabase is not configured." };
+  const { error } = await supabase
+    .from("sfo_enquiries")
+    .update({ pipeline_status: status })
+    .eq("reference", reference);
+  if (!error) return { ok: true };
+
+  const enquiryStatus =
+    status === "spam" ? "spam" :
+    status === "closed" || status === "converted" ? "closed" :
+    status === "approved" || status === "qualified" || status === "description-review" ? "in-progress" :
+    "new";
+  const { error: e2 } = await supabase
+    .from("enquiries")
+    .update({ status: enquiryStatus })
+    .eq("reference", reference);
+  return e2 ? { ok: false, message: e2.message } : { ok: true };
 }
 
 /** Staff-only listing editor helpers. RLS in global-office-platform.sql is the access control. */

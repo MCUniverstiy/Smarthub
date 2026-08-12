@@ -121,8 +121,9 @@ export function PartnershipPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
+    e?.stopPropagation();
     if (!form.fullName || !form.email || !form.company) {
       alert("Please fill in name, email and company.");
       return;
@@ -134,26 +135,28 @@ export function PartnershipPage() {
     }
 
     setStatus("sending");
+    try {
+      const result = await submitSfoEnquiry({
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone,
+        company: form.company,
+        country: form.country,
+        city: form.officeLocation,
+        message: form.message,
+      });
 
-    const result = await submitSfoEnquiry({
-      fullName: form.fullName,
-      email: form.email,
-      phone: form.phone,
-      company: form.company,
-      country: form.country,
-      city: form.officeLocation,
-      message: form.message,
-    });
-
-    if (result.ok) {
-      setSubmittedRef(result.reference);
-      setStatus("success");
-      // reset form
-      setForm({ fullName: "", email: "", phone: "", company: "", country: "", officeLocation: "", message: "" });
-    } else {
+      if (result.ok) {
+        setSubmittedRef(result.reference);
+        setStatus("success");
+        setForm({ fullName: "", email: "", phone: "", company: "", country: "", officeLocation: "", message: "" });
+      } else {
+        setStatus("error");
+        alert(result.message || "Could not submit the enquiry. Please try again later or email us directly.");
+      }
+    } catch (err) {
       setStatus("error");
-      // Show a helpful alert so users know what happened
-      alert(result.message || "Could not submit the enquiry. Please try again later or email us directly.");
+      alert(err instanceof Error ? err.message : "Could not submit the enquiry. Please try again later.");
     }
   }
 
@@ -172,9 +175,9 @@ export function PartnershipPage() {
   return (
     <>
       <PageHero
-        eyebrow="Global Single Family Offices"
-        title="Partner with us worldwide."
-        lead="List your offices in Singapore, China, Cyprus and beyond. Let companies from around the world book premium SFO space through SmartHub."
+        eyebrow="Office hosting partnership"
+        title="Host your office with SmartHub."
+        lead="Other companies apply here to list their spaces on our network. SmartHub reviews every application and decides what goes live."
         image="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=2400&q=80"
         height="md"
       />
@@ -216,9 +219,9 @@ export function PartnershipPage() {
       <section className="py-20 bg-white" id="partnership-form">
         <div className="mx-auto max-w-3xl px-6">
           <SectionHeading
-            eyebrow="Become a Global Partner"
-            title="List your office or set up a new SFO hub"
-            lead="Companies from around the world are looking for trusted single-family office partners. Tell us about your location and we’ll help you get listed and bookable."
+            eyebrow="Apply to host with us"
+            title="Tell us about the office you want to list"
+            lead="This form is for companies that want SmartHub to host and book their space. We review every application before anything is published."
             align="center"
           />
 
@@ -230,12 +233,19 @@ export function PartnershipPage() {
                 Your enquiry was received. Reference: <span className="font-mono font-semibold">{submittedRef}</span>
               </p>
               <p className="mt-1 text-sm text-emerald-700">Our team will review within 1-2 business days and contact you to finalise listing.</p>
-              <Button asChild variant="outline" className="mt-6" onClick={() => setStatus("idle")}>
+              <Button type="button" variant="outline" className="mt-6" onClick={() => setStatus("idle")}>
                 Submit another enquiry
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="mt-10 space-y-6 rounded-3xl border bg-white p-8 shadow-xl">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                void handleSubmit(e);
+              }}
+              className="mt-10 space-y-6 rounded-3xl border bg-white p-8 shadow-xl"
+            >
               <div className="grid gap-5 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Full Name *</label>
@@ -291,9 +301,10 @@ export function PartnershipPage() {
                 />
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="button"
                 disabled={status === "sending"}
+                onClick={() => void handleSubmit()}
                 className="w-full bg-gradient-to-r from-teal-600 to-teal-700 text-white py-6 text-base"
               >
                 {status === "sending" ? "Submitting..." : "Submit Partnership Enquiry"}

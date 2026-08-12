@@ -45,8 +45,17 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatHKD } from "@/lib/booking-data";
-import { getManagedGlobalListings, removeGlobalListing, saveGlobalListing, setGlobalListingPublication } from "@/lib/global-office";
+import { formatHKD, ROOMS } from "@/lib/booking-data";
+import {
+  deletePartnershipApplication,
+  fetchPartnershipApplications,
+  getManagedGlobalListings,
+  removeGlobalListing,
+  saveGlobalListing,
+  setGlobalListingPublication,
+  updatePartnershipStatus,
+  type PartnershipApplication,
+} from "@/lib/global-office";
 import {
   BOOKING_STATUSES,
   ENQUIRY_STATUSES,
@@ -153,7 +162,8 @@ export function AdminPage() {
   const [enquiries, setEnquiries] = useState<InboxEnquiry[]>([]);
   // Which inbox is on screen. Bookings first: they are time-critical in a
   // way that an enquiry is not.
-  const [tab, setTab] = useState<"bookings" | "enquiries" | "global-offices">("bookings");
+  const [tab, setTab] = useState<"bookings" | "enquiries" | "partnerships" | "global-offices">("bookings");
+  const [partnerships, setPartnerships] = useState<PartnershipApplication[]>([]);
 
   // ===== GLOBAL OFFICES (SFO Partnership) management =====
   type GlobalOffice = {
@@ -173,7 +183,7 @@ export function AdminPage() {
 
   const [newOffice, setNewOffice] = useState<Partial<GlobalOffice>>({
     name: "",
-    country: "Singapore",
+    country: "Hong Kong",
     city: "",
     description: "",
     capacity: 8,
@@ -199,7 +209,7 @@ export function AdminPage() {
     const office: GlobalOffice = {
       id: editingId || `sfo-${Date.now()}`,
       name: newOffice.name!,
-      country: newOffice.country || "Singapore",
+      country: newOffice.country || "Hong Kong",
       city: newOffice.city!,
       description: newOffice.description!,
       capacity: Number(newOffice.capacity) || 8,
@@ -215,7 +225,7 @@ export function AdminPage() {
     if (!saved.ok) { alert(saved.message || "Could not save the listing. Run the global-office SQL migration first."); return; }
     await loadGlobalOffices();
     setEditingId(null);
-    setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
+    setNewOffice({ name: "", country: "Hong Kong", city: "Wan Chai", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
   };
 
   const editOffice = (office: GlobalOffice) => {
@@ -239,7 +249,7 @@ export function AdminPage() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
+    setNewOffice({ name: "", country: "Hong Kong", city: "Wan Chai", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
   };
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<BookingStatus | "all">("pending");
@@ -265,12 +275,14 @@ export function AdminPage() {
     setLoading(true);
     // Both inboxes at once: two small reads in parallel beats making the
     // user wait again when they switch tabs.
-    const [bookingRows, enquiryRows] = await Promise.all([
+    const [bookingRows, enquiryRows, partnerRows] = await Promise.all([
       fetchBookings(),
       fetchEnquiries(),
+      fetchPartnershipApplications(),
     ]);
     setBookings(bookingRows);
     setEnquiries(enquiryRows);
+    setPartnerships(partnerRows);
     setLoading(false);
   }, []);
 
@@ -641,17 +653,17 @@ export function AdminPage() {
       {/* Which inbox. Bookings and enquiries are different jobs, so they
           get separate lists rather than one merged feed. */}
       <div className="mb-5 flex gap-1 rounded-full bg-slate-100 p-1">
-        {(["bookings", "enquiries", "global-offices"] as const).map((key) => (
+        {(["bookings", "enquiries", "partnerships", "global-offices"] as const).map((key) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${
+            className={`flex-1 rounded-full px-3 py-2 text-sm font-semibold capitalize transition ${
               tab === key
                 ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-500 hover:text-slate-800"
             }`}
           >
-            {key === "global-offices" ? "Global SFO Offices" : key}
+            {key === "global-offices" ? "Published offices" : key === "partnerships" ? "Partnerships" : key}
             {key === "bookings" && counts.pending > 0 && (
               <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
                 {counts.pending}
@@ -660,6 +672,11 @@ export function AdminPage() {
             {key === "enquiries" && unreadEnquiries > 0 && (
               <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
                 {unreadEnquiries}
+              </span>
+            )}
+            {key === "partnerships" && partnerships.filter((p) => p.pipeline_status === "new").length > 0 && (
+              <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
+                {partnerships.filter((p) => p.pipeline_status === "new").length}
               </span>
             )}
           </button>
@@ -727,6 +744,11 @@ export function AdminPage() {
                           <code className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
                             {b.reference}
                           </code>
+                          {b.source === "global" && (
+                            <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700 ring-1 ring-sky-200">
+                              Partner office
+                            </span>
+                          )}
                         </div>
                         <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-600">
                           <span className="flex items-center gap-1.5">
@@ -836,6 +858,145 @@ export function AdminPage() {
         </div>
       )}
       </>
+      ) : tab === "partnerships" ? (
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-[#c8eeeb] bg-[#e2f7f5] p-5 text-sm text-[#1a2d2c]">
+          <div>
+            <p className="font-semibold">Partnership applications</p>
+            <p className="mt-1 text-[#4a5e5d]">
+              Companies asking us to host their offices. Approve only after you have reviewed the space. Nothing goes live until you publish it under Published offices.
+            </p>
+          </div>
+          {partnerships.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-rose-200 text-rose-700 hover:bg-rose-50"
+              onClick={async () => {
+                if (!confirm(`Delete all ${partnerships.length} partnership applications? This cannot be undone from this screen.`)) return;
+                const results = await Promise.all(partnerships.map((row) => deletePartnershipApplication(row.reference)));
+                const failed = results.filter((r) => !r.ok).length;
+                await load();
+                setNotice(failed ? `${partnerships.length - failed} deleted, ${failed} failed.` : "All partnership applications deleted.");
+              }}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete all
+            </Button>
+          )}
+        </div>
+        {partnerships.length === 0 ? (
+          <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center">
+            <MessageSquare className="mx-auto h-8 w-8 text-slate-300" />
+            <p className="mt-3 text-sm text-slate-500">No partnership applications yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {partnerships.map((p) => (
+              <article key={p.reference} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-slate-900">{p.company || p.full_name}</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                        {p.pipeline_status}
+                      </span>
+                      <code className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{p.reference}</code>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {prettyStamp(p.created_at)} · {p.full_name}
+                      {p.country ? ` · ${p.country}` : ""}
+                      {p.city ? `, ${p.city}` : ""}
+                    </p>
+                  </div>
+                  <div className="relative z-10 flex flex-wrap gap-2">
+                    <a
+                      href={`mailto:${p.email}`}
+                      className="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      <Mail className="mr-1.5 h-3.5 w-3.5" /> Reply
+                    </a>
+                    {p.pipeline_status !== "approved" && (
+                      <button
+                        type="button"
+                        className="inline-flex items-center rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700"
+                        onClick={async () => {
+                          const res = await updatePartnershipStatus(p.reference, "approved");
+                          if (!res.ok) { setNotice(res.message || "Could not approve."); return; }
+                          setPartnerships((rows) => rows.map((r) => r.reference === p.reference ? { ...r, pipeline_status: "approved" } : r));
+                          setNotice(`${p.reference} approved. Create and publish the listing under Published offices.`);
+                        }}
+                      >
+                        Approve
+                      </button>
+                    )}
+                    {p.pipeline_status !== "closed" && (
+                      <button
+                        type="button"
+                        className="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        onClick={async () => {
+                          const res = await updatePartnershipStatus(p.reference, "closed");
+                          if (!res.ok) { setNotice(res.message || "Could not close."); return; }
+                          setPartnerships((rows) => rows.map((r) => r.reference === p.reference ? { ...r, pipeline_status: "closed" } : r));
+                          setNotice(`${p.reference} closed.`);
+                        }}
+                      >
+                        Decline
+                      </button>
+                    )}
+                    {confirming === p.reference ? (
+                      <button
+                        type="button"
+                        className="inline-flex items-center rounded-md bg-rose-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700"
+                        onClick={async () => {
+                          setConfirming("");
+                          const res = await deletePartnershipApplication(p.reference);
+                          if (!res.ok) {
+                            setNotice(res.message || "Could not delete.");
+                            alert(res.message || "Could not delete this application.");
+                            return;
+                          }
+                          setPartnerships((rows) => rows.filter((r) => r.reference !== p.reference));
+                          setNotice(`${p.reference} deleted.`);
+                          await load();
+                        }}
+                      >
+                        Delete for good?
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium text-rose-600 hover:bg-rose-50"
+                        onClick={() => setConfirming(p.reference)}
+                      >
+                        <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-3 whitespace-pre-wrap border-t border-slate-100 pt-3 text-sm leading-relaxed text-slate-700">
+                  {p.raw_message}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 text-teal-700 hover:underline"
+                    onClick={() => { window.location.href = `mailto:${p.email}`; }}
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    {p.email}
+                  </button>
+                  {p.phone && (
+                    <a href={`tel:${p.phone}`} className="flex items-center gap-1.5 text-teal-700 hover:underline">
+                      <Phone className="h-3.5 w-3.5" />
+                      {p.phone}
+                    </a>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
       ) : tab === "enquiries" ? (
       /* ---------------- Enquiries ---------------- */
       <>
@@ -989,8 +1150,33 @@ export function AdminPage() {
       ) : (
         <section className="space-y-6">
           <div className="rounded-2xl border border-[#c8eeeb] bg-[#e2f7f5] p-5 text-sm text-[#1a2d2c]">
-            <p className="font-semibold">Global listing manager</p>
-            <p className="mt-1 text-[#4a5e5d]">Create and refine draft listings here. Run <code className="rounded bg-white px-1">supabase/global-office-platform.sql</code> before publishing to the global directory.</p>
+            <p className="font-semibold">Office listing manager</p>
+            <p className="mt-1 text-[#4a5e5d]">Hong Kong, China, Singapore and Cyprus all use this list. Publish a listing to show it on Book a Room. Run <code className="rounded bg-white px-1">supabase/global-office-platform.sql</code> first.</p>
+            <Button
+              size="sm"
+              className="mt-3"
+              onClick={async () => {
+                if (!confirm("Create the six Wan Chai rooms as editable drafts? You can change photos and text, then publish.")) return;
+                for (const room of ROOMS) {
+                  const saved = await saveGlobalListing({
+                    name: room.name.en,
+                    country: "Hong Kong",
+                    city: "Wan Chai",
+                    description_html: room.blurb.en,
+                    capacity: room.capacity,
+                    amenities: [room.unit === "day" ? "Day rate" : "Hourly"],
+                    image_url: room.image,
+                    rate: room.rate,
+                    rate_unit: room.unit,
+                  });
+                  if (!saved.ok) { alert(saved.message || "Could not import Hong Kong rooms."); return; }
+                }
+                await loadGlobalOffices();
+                setNotice("Wan Chai rooms imported as drafts. Edit them, then Publish.");
+              }}
+            >
+              Import Hong Kong rooms
+            </Button>
           </div>
           <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -1076,4 +1262,3 @@ export function AdminPage() {
     </Shell>
   );
 }
-

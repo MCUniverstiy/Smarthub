@@ -292,6 +292,7 @@ export type InboxBooking = {
   notes: string | null;
   internal_note: string | null;
   created_at: string;
+  source?: "hong-kong" | "global";
 };
 
 /**
@@ -326,10 +327,72 @@ export async function fetchBookings(): Promise<InboxBooking[]> {
       .order("booking_date", { ascending: true })
       .order("start_time", { ascending: true });
     if (error || !Array.isArray(data)) return [];
-    return data as InboxBooking[];
+    const local = (data as InboxBooking[]).map((row) => ({ ...row, source: "hong-kong" as const }));
+    const partner = await fetchPartnerBookings();
+    return [...partner, ...local].sort((a, b) => {
+      const date = a.booking_date.localeCompare(b.booking_date);
+      return date !== 0 ? date : a.start_time.localeCompare(b.start_time);
+    });
   } catch {
     return [];
   }
+}
+
+function mapPartnerStatus(status: string): BookingStatus {
+  if (status === "confirmed") return "confirmed";
+  if (status === "declined") return "declined";
+  if (status === "cancelled" || status === "completed") return "cancelled";
+  return "pending";
+}
+
+/** Partner-office requests (China / Singapore / Cyprus) live in global_booking_requests. */
+async function fetchPartnerBookings(): Promise<InboxBooking[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("global_booking_requests")
+    .select("reference,status,starts_at,ends_at,attendees,full_name,email,phone,company,quoted_total,created_at,listing:global_listings(name,country,city)")
+    .order("starts_at", { ascending: true })
+    .limit(500);
+  if (error || !Array.isArray(data)) return [];
+  return data.map((row: {
+    reference: string;
+    status: string;
+    starts_at: string;
+    ends_at: string;
+    attendees: number;
+    full_name: string;
+    email: string;
+    phone: string | null;
+    company: string | null;
+    quoted_total: number | null;
+    created_at: string;
+    listing: { name: string; country: string; city: string } | { name: string; country: string; city: string }[] | null;
+  }) => {
+    const listing = Array.isArray(row.listing) ? row.listing[0] : row.listing;
+    const start = new Date(row.starts_at);
+    const end = new Date(row.ends_at);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return {
+      reference: row.reference,
+      status: mapPartnerStatus(row.status),
+      booking_date: `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`,
+      start_time: `${pad(start.getHours())}:${pad(start.getMinutes())}:00`,
+      end_time: `${pad(end.getHours())}:${pad(end.getMinutes())}:00`,
+      room: listing ? `${listing.name} · ${listing.city}, ${listing.country}` : "Partner office",
+      attendees: row.attendees,
+      full_name: row.full_name,
+      email: row.email,
+      phone: row.phone || "",
+      company: row.company || "",
+      br_number: "N/A",
+      payment_method: "request",
+      quoted_total: row.quoted_total,
+      notes: null,
+      internal_note: null,
+      created_at: row.created_at,
+      source: "global" as const,
+    };
+  });
 }
 
 /**
@@ -345,12 +408,22 @@ export async function updateBookingStatus(
 ): Promise<{ ok: boolean; message?: string }> {
   if (!supabase) return { ok: false, message: "Supabase is not configured." };
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("bookings")
       .update({ status })
-      .eq("reference", reference);
-    if (error) return { ok: false, message: error.message };
-    return { ok: true };
+      .eq("reference", reference)
+      .select("reference");
+    if (!error && (data?.length ?? 0) > 0) return { ok: true };
+
+    const partnerStatus =
+      status === "pending" ? "requested" : status === "cancelled" ? "cancelled" : status;
+    const partner = await supabase
+      .from("global_booking_requests")
+      .update({ status: partnerStatus })
+      .eq("reference", reference)
+      .select("reference");
+    if (!partner.error && (partner.data?.length ?? 0) > 0) return { ok: true };
+    return { ok: false, message: error?.message || partner.error?.message || "Booking not found." };
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Network error" };
   }

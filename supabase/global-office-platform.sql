@@ -224,6 +224,9 @@ drop policy if exists global_listings_staff_all on public.global_listings;
 create policy global_listings_staff_all on public.global_listings for all to authenticated using (public.is_staff() or public.can_manage_organization(organization_id)) with check (public.is_staff() or public.can_manage_organization(organization_id));
 drop policy if exists global_bookings_staff_read on public.global_booking_requests;
 create policy global_bookings_staff_read on public.global_booking_requests for select to authenticated using (public.is_staff() or public.can_manage_organization((select organization_id from public.global_listings where id = listing_id)));
+drop policy if exists global_bookings_staff_write on public.global_booking_requests;
+create policy global_bookings_staff_write on public.global_booking_requests for update to authenticated using (public.is_staff()) with check (public.is_staff());
+grant select, update on public.global_booking_requests to authenticated;
 drop policy if exists sfo_enquiries_staff_all on public.sfo_enquiries;
 create policy sfo_enquiries_staff_all on public.sfo_enquiries for all to authenticated using (public.is_staff()) with check (public.is_staff());
 drop policy if exists audit_events_staff_read on public.audit_events;
@@ -236,3 +239,23 @@ grant execute on function public.submit_sfo_enquiry(text,text,text,text,text,tex
 revoke all on function public.submit_global_booking_request(uuid,text,text,text,text,timestamptz,timestamptz,integer,text) from public;
 grant execute on function public.submit_global_booking_request(uuid,text,text,text,text,timestamptz,timestamptz,integer,text) to anon, authenticated;
 grant execute on function public.convert_sfo_enquiry_to_listing(uuid,text) to authenticated;
+
+-- Staff may delete partnership applications (plain DELETE is not granted).
+create or replace function public.delete_sfo_enquiry(p_reference text)
+returns table(deleted boolean, reference text)
+language plpgsql volatile security definer set search_path = public as $$
+begin
+  if not public.is_staff() then
+    raise exception 'Only staff can delete partnership applications' using errcode = 'insufficient_privilege';
+  end if;
+  delete from public.sfo_enquiries e where e.reference = p_reference;
+  if found then
+    return query select true, p_reference;
+  else
+    return query select false, p_reference;
+  end if;
+end $$;
+
+revoke all on function public.delete_sfo_enquiry(text) from public;
+grant execute on function public.delete_sfo_enquiry(text) to authenticated;
+grant delete on public.sfo_enquiries to authenticated;

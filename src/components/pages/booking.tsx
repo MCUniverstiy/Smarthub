@@ -37,7 +37,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { useLang } from "@/lib/i18n/lang-context";
 import { PageHero } from "@/components/blocks/page-hero";
 import { SectionHeading } from "@/components/blocks/section-heading";
@@ -175,8 +174,37 @@ export function BookingPage() {
   const [selectedOfficeLocation, setSelectedOfficeLocation] = useState("Hong Kong");
   const [globalListings, setGlobalListings] = useState<GlobalListing[]>([]);
   const [globalListingId, setGlobalListingId] = useState("");
-  const isGlobalBooking = selectedOfficeLocation !== "Hong Kong";
   const selectedGlobalListing = globalListings.find((listing) => listing.id === globalListingId);
+  const isGlobalBooking = selectedOfficeLocation !== "Hong Kong" || Boolean(selectedGlobalListing);
+
+  const FALLBACK_OFFICE_IMAGE =
+    "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80";
+
+  const catalogue = useMemo(() => {
+    const fromDb = globalListings.map((listing) => ({
+      id: listing.id,
+      kind: "global" as const,
+      name: listing.name,
+      description: listing.description_html.replace(/<[^>]*>/g, "") || "Premium office space.",
+      capacity: listing.capacity,
+      image: listing.image_url || FALLBACK_OFFICE_IMAGE,
+      emoji: "",
+    }));
+    if (selectedOfficeLocation === "Hong Kong") {
+      // Published HK listings from admin replace the hardcoded Wan Chai rooms.
+      if (fromDb.length) return fromDb;
+      return ROOMS.map((room) => ({
+        id: room.id,
+        kind: "local" as const,
+        name: room.name[lang],
+        description: room.blurb[lang],
+        capacity: room.capacity,
+        image: room.image,
+        emoji: room.emoji,
+      }));
+    }
+    return fromDb;
+  }, [globalListings, lang, selectedOfficeLocation]);
 
   // Lazy initialiser: seed the form from the URL so `#/book?room=event-space`
   // opens with that room preselected. Reading the hash here (rather than in
@@ -199,7 +227,7 @@ export function BookingPage() {
 
   useEffect(() => {
     setGlobalListingId("");
-    if (selectedOfficeLocation === "Hong Kong") { setGlobalListings([]); return; }
+    setForm((f) => ({ ...f, roomId: "" }));
     void searchGlobalListings({ country: selectedOfficeLocation }).then(setGlobalListings);
   }, [selectedOfficeLocation]);
 
@@ -689,24 +717,29 @@ export function BookingPage() {
 
       {/* Global locations come first. The Hong Kong room catalogue below remains
           the local booking experience. */}
-      <GlobalOfficeDirectory onLocationChange={setSelectedOfficeLocation} />
+      <GlobalOfficeDirectory region={selectedOfficeLocation} onLocationChange={setSelectedOfficeLocation} />
 
-      {/* ===== HONG KONG ROOM CATALOGUE ===== */}
-      {/* Six selectable cards. Clicking one sets `form.roomId`, updates the
-          URL (`?room=...`) and scrolls to the form. The selected card gets
-          a teal ring so the choice stays visible while scrolling. */}
-      {selectedOfficeLocation === "Hong Kong" && <section className="bg-gradient-to-b from-white via-teal-50/30 to-white py-20 lg:py-24">
+      <section className="bg-gradient-to-b from-white via-teal-50/30 to-white py-20 lg:py-24">
         <div className="mx-auto max-w-7xl px-6">
           <SectionHeading
-            eyebrow="Hong Kong offices"
+            eyebrow={`${selectedOfficeLocation} offices`}
             title="Available Spaces"
-            lead="Six rooms. One Wan Chai address. Select a room to request a booking."
+            lead={
+              selectedOfficeLocation === "Hong Kong"
+                ? "Six rooms. One Wan Chai address. Select a room to request a booking."
+                : `Partner offices in ${selectedOfficeLocation}. Select a space to request a booking.`
+            }
             align="center"
           />
 
+          {catalogue.length === 0 ? (
+            <p className="mt-12 text-center text-sm text-slate-500">
+              No published offices in {selectedOfficeLocation} yet. Approve a partnership application and publish it from admin.
+            </p>
+          ) : (
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {ROOMS.map((room) => {
-              const isSelected = form.roomId === room.id;
+            {catalogue.map((room) => {
+              const isSelected = room.kind === "local" ? form.roomId === room.id : globalListingId === room.id;
               return (
                 <div
                   key={room.id}
@@ -716,14 +749,11 @@ export function BookingPage() {
                       : "border-slate-200"
                   }`}
                 >
-                  {/* Photo + floating rate pill. */}
-                  <div className="relative aspect-[16/10] overflow-hidden">
-                    <Image
+                  <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+                    <img
                       src={room.image}
-                      alt={room.name[lang]}
-                      fill
-                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                      className="object-cover transition duration-500 group-hover:scale-105"
+                      alt={room.name}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/45 to-transparent" />
                     {isSelected && (
@@ -736,20 +766,25 @@ export function BookingPage() {
 
                   <div className="flex flex-1 flex-col p-6">
                     <h3 className="font-display text-lg font-bold text-slate-900">
-                      <span className="mr-1.5" aria-hidden="true">
-                        {room.emoji}
-                      </span>
-                      {room.name[lang]}
+                      {room.emoji ? <span className="mr-1.5" aria-hidden="true">{room.emoji}</span> : null}
+                      {room.name}
                     </h3>
                     <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">
-                      {room.blurb[lang]}
+                      {room.description}
                     </p>
                     <div className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
                       <Users className="h-3.5 w-3.5 text-teal-600" />
                       {fill(b.capacityLabel, { n: room.capacity })}
                     </div>
                     <Button
-                      onClick={() => chooseRoom(room.id)}
+                      onClick={() => {
+                        if (room.kind === "local") chooseRoom(room.id as RoomId);
+                        else {
+                          setGlobalListingId(room.id);
+                          update("roomId", "");
+                          formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                      }}
                       className={`mt-5 w-full ${
                         isSelected
                           ? "bg-teal-600 text-white hover:bg-teal-700"
@@ -764,8 +799,9 @@ export function BookingPage() {
               );
             })}
           </div>
+          )}
         </div>
-      </section>}
+      </section>
 
       {/* ===== BOOKING FORM + LIVE SUMMARY ===== */}
       <section ref={formRef} id="booking-form" className="scroll-mt-24 bg-white py-20 lg:py-24">
@@ -1010,16 +1046,27 @@ export function BookingPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label={b.form.room} htmlFor="room" error={errors.roomId} required>
                     <Select
-                      value={isGlobalBooking ? globalListingId : form.roomId}
-                      onValueChange={(v) => isGlobalBooking ? setGlobalListingId(v) : update("roomId", v as RoomId)}
+                      value={catalogue.some((room) => room.kind === "global") ? globalListingId : form.roomId}
+                      onValueChange={(v) => {
+                        const item = catalogue.find((room) => room.id === v);
+                        if (item?.kind === "local") {
+                          setGlobalListingId("");
+                          update("roomId", v as RoomId);
+                        } else {
+                          setGlobalListingId(v);
+                          update("roomId", "");
+                        }
+                      }}
                     >
                       <SelectTrigger id="room" className="w-full">
-                        <SelectValue placeholder={b.form.chooseRoom} />
+                        <SelectValue placeholder={catalogue.length ? b.form.chooseRoom : `No ${selectedOfficeLocation} rooms yet`} />
                       </SelectTrigger>
                       <SelectContent>
-                        {isGlobalBooking
-                          ? globalListings.map((listing) => <SelectItem key={listing.id} value={listing.id}>{listing.name} · {listing.city}</SelectItem>)
-                          : ROOMS.map((room) => <SelectItem key={room.id} value={room.id}>{room.emoji} {room.name[lang]}</SelectItem>)}
+                        {catalogue.map((room) => (
+                          <SelectItem key={room.id} value={room.id}>
+                            {room.emoji ? `${room.emoji} ` : ""}{room.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Field>
@@ -1165,7 +1212,7 @@ export function BookingPage() {
                     <dl className="divide-y divide-slate-100 text-sm">
                       <SummaryRow
                         label={b.summaryRoom}
-                        value={selectedRoom ? selectedRoom.name[lang] : "—"}
+                        value={selectedRoom ? selectedRoom.name[lang] : selectedGlobalListing?.name ?? "—"}
                       />
                       <SummaryRow
                         label={b.summaryDate}
