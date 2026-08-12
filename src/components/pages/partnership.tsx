@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLang } from "@/lib/i18n/lang-context";
 import { PageHero } from "@/components/blocks/page-hero";
 import { SectionHeading } from "@/components/blocks/section-heading";
@@ -147,7 +147,7 @@ export function PartnershipPage() {
   const bookOffice = (office: GlobalOffice) => {
     // Navigate to booking with global office pre-selected via query
     if (typeof window !== "undefined") {
-      window.location.hash = `#/book?room=sg-sfo-1&global=${office.id}&location=${encodeURIComponent(office.country)}`;
+      window.location.hash = `#/book?global=${encodeURIComponent(office.id)}&location=${encodeURIComponent(office.country)}`;
     }
   };
 
