@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatHKD } from "@/lib/booking-data";
+import { formatHKD, ROOMS } from "@/lib/booking-data";
 import {
   deletePartnershipApplication,
   fetchPartnershipApplications,
@@ -183,7 +183,7 @@ export function AdminPage() {
 
   const [newOffice, setNewOffice] = useState<Partial<GlobalOffice>>({
     name: "",
-    country: "Singapore",
+    country: "Hong Kong",
     city: "",
     description: "",
     capacity: 8,
@@ -209,7 +209,7 @@ export function AdminPage() {
     const office: GlobalOffice = {
       id: editingId || `sfo-${Date.now()}`,
       name: newOffice.name!,
-      country: newOffice.country || "Singapore",
+      country: newOffice.country || "Hong Kong",
       city: newOffice.city!,
       description: newOffice.description!,
       capacity: Number(newOffice.capacity) || 8,
@@ -225,7 +225,7 @@ export function AdminPage() {
     if (!saved.ok) { alert(saved.message || "Could not save the listing. Run the global-office SQL migration first."); return; }
     await loadGlobalOffices();
     setEditingId(null);
-    setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
+    setNewOffice({ name: "", country: "Hong Kong", city: "Wan Chai", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
   };
 
   const editOffice = (office: GlobalOffice) => {
@@ -249,7 +249,7 @@ export function AdminPage() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
+    setNewOffice({ name: "", country: "Hong Kong", city: "Wan Chai", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
   };
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<BookingStatus | "all">("pending");
@@ -1145,8 +1145,33 @@ export function AdminPage() {
       ) : (
         <section className="space-y-6">
           <div className="rounded-2xl border border-[#c8eeeb] bg-[#e2f7f5] p-5 text-sm text-[#1a2d2c]">
-            <p className="font-semibold">Global listing manager</p>
-            <p className="mt-1 text-[#4a5e5d]">Create and refine draft listings here. Run <code className="rounded bg-white px-1">supabase/global-office-platform.sql</code> before publishing to the global directory.</p>
+            <p className="font-semibold">Office listing manager</p>
+            <p className="mt-1 text-[#4a5e5d]">Hong Kong, China, Singapore and Cyprus all use this list. Publish a listing to show it on Book a Room. Run <code className="rounded bg-white px-1">supabase/global-office-platform.sql</code> first.</p>
+            <Button
+              size="sm"
+              className="mt-3"
+              onClick={async () => {
+                if (!confirm("Create the six Wan Chai rooms as editable drafts? You can change photos and text, then publish.")) return;
+                for (const room of ROOMS) {
+                  const saved = await saveGlobalListing({
+                    name: room.name.en,
+                    country: "Hong Kong",
+                    city: "Wan Chai",
+                    description_html: room.blurb.en,
+                    capacity: room.capacity,
+                    amenities: [room.unit === "day" ? "Day rate" : "Hourly"],
+                    image_url: room.image,
+                    rate: room.rate,
+                    rate_unit: room.unit,
+                  });
+                  if (!saved.ok) { alert(saved.message || "Could not import Hong Kong rooms."); return; }
+                }
+                await loadGlobalOffices();
+                setNotice("Wan Chai rooms imported as drafts. Edit them, then Publish.");
+              }}
+            >
+              Import Hong Kong rooms
+            </Button>
           </div>
           <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
