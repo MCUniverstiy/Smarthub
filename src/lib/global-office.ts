@@ -10,8 +10,8 @@ export type GlobalListing = {
   description_html: string;
   capacity: number;
   currency: string;
-  rate: number;
-  rate_unit: "hour" | "day";
+  rate?: number;
+  rate_unit?: "hour" | "day";
   amenities: string[];
   image_url: string | null;
   booking_mode: "request" | "instant";
@@ -69,7 +69,7 @@ export async function submitSfoEnquiry(input: SfoEnquiryInput): Promise<{ ok: tr
 
 /** Staff-only listing editor helpers. RLS in global-office-platform.sql is the access control. */
 export type ManagedGlobalListing = GlobalListing & { status: "draft" | "review" | "published" | "hidden" | "archived"; visibility: boolean };
-export type ListingDraft = Pick<ManagedGlobalListing, "name" | "country" | "city" | "description_html" | "capacity" | "rate" | "rate_unit" | "amenities"> & { id?: string; status?: ManagedGlobalListing["status"]; visibility?: boolean };
+export type ListingDraft = Pick<ManagedGlobalListing, "name" | "country" | "city" | "description_html" | "capacity" | "rate" | "rate_unit" | "amenities"> & { id?: string; status?: ManagedGlobalListing["status"]; visibility?: boolean; image_url?: string | null };
 
 const slugify = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `office-${Date.now()}`;
 
@@ -81,12 +81,13 @@ export async function getManagedGlobalListings(): Promise<ManagedGlobalListing[]
 
 export async function saveGlobalListing(draft: ListingDraft): Promise<{ ok: boolean; id?: string; message?: string }> {
   if (!supabase) return { ok: false, message: "Supabase is not configured." };
-  const row = {
+  const row: any = {
     name: draft.name, country: draft.country, city: draft.city, description_html: draft.description_html,
-    capacity: draft.capacity, rate: draft.rate, rate_unit: draft.rate_unit, amenities: draft.amenities,
+    capacity: draft.capacity, amenities: draft.amenities,
     status: draft.status ?? "draft", visibility: draft.visibility ?? false,
     slug: draft.id ? undefined : `${slugify(draft.country)}-${slugify(draft.city)}-${slugify(draft.name)}-${Date.now().toString().slice(-5)}`,
   };
+  if (draft.image_url !== undefined) row.image_url = draft.image_url;
   const query = draft.id
     ? supabase.from("global_listings").update(row).eq("id", draft.id).select("id").single()
     : supabase.from("global_listings").insert(row).select("id").single();
