@@ -144,7 +144,12 @@ export function Navbar() {
       >
         {/* Centered content row: max-w-7xl container with logo on the left
             and nav/actions on the right. */}
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-4 px-5 py-3.5 sm:px-6">
+        {/* max-w-7xl matches the utility bar above and every page section,
+            so the logo lines up with the content below it. It is also what
+            keeps the row from overflowing: the nav links are nowrap, so a
+            narrower container forced the centred nav to spill sideways over
+            the logo and the language switcher. */}
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-3.5 sm:px-6">
           {/* ---------- LOGO ---------- */}
           {/* Uses RouterLink so clicking it navigates to the home route
               without a full page reload. The "S" tile is a CSS gradient square. */}
@@ -173,9 +178,9 @@ export function Navbar() {
               <RouterLink
                 key={link.to}
                 to={link.to}
-                className={`relative whitespace-nowrap px-2.5 py-2 text-[13px] font-medium transition after:absolute after:bottom-0 after:left-3 after:h-0.5 after:w-0 after:bg-[#d4a94c] after:transition-all hover:after:w-[calc(100%-20px)] ${
+                className={`relative whitespace-nowrap px-2 py-2 text-[13px] font-medium transition after:absolute after:bottom-0 after:left-2 after:h-0.5 after:w-0 after:bg-[#d4a94c] after:transition-all hover:after:w-[calc(100%-16px)] ${
                   route === link.to
-                    ? "text-[#148f8a] after:w-[calc(100%-20px)]"
+                    ? "text-[#148f8a] after:w-[calc(100%-16px)]"
                     : "text-[#1a2d2c] hover:text-[#148f8a]"
                 }`}
               >
@@ -187,7 +192,7 @@ export function Navbar() {
           {/* ---------- RIGHT SIDE ACTIONS ---------- */}
           {/* Contains the language switcher, the "Get Started" CTA button
               (hidden on very small screens), and the hamburger menu button. */}
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="relative z-10 flex shrink-0 items-center gap-1.5">
             {/* Language dropdown — EN / 繁 / 简 */}
             <LanguageSwitcher />
             {/* Primary CTA button. `asChild` makes the Button component merge
