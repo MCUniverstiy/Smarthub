@@ -134,6 +134,15 @@ function prettyTime(t: string): string {
   return `${h12}:${m ?? "00"} ${suffix}`;
 }
 
+/** Shared frame for every admin state: setup, sign-in, access denial, and inbox. */
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <section className="bg-[#f6fafa] px-5 py-14 sm:px-6 sm:py-20">
+      <div className="mx-auto max-w-6xl">{children}</div>
+    </section>
+  );
+}
+
 export function AdminPage() {
   /** "checking" until we know whether someone is signed in and staff. */
   const [gate, setGate] = useState<"checking" | "signed-out" | "denied" | "ok">(

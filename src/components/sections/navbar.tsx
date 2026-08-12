@@ -168,7 +168,7 @@ export function Navbar() {
           {/* Each link is highlighted with teal background when its `to`
               matches the current `route`. The `route` value comes from our
               custom hash-based router. */}
-          <nav className="hidden min-w-0 flex-1 items-center justify-end gap-0 xl:flex">
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0 xl:ml-8 xl:flex">
             {navLinks.map((link) => (
               <RouterLink
                 key={link.to}
