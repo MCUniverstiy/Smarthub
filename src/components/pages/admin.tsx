@@ -46,7 +46,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatHKD } from "@/lib/booking-data";
-import { getManagedGlobalListings, removeGlobalListing, saveGlobalListing, setGlobalListingPublication } from "@/lib/global-office";
+import {
+  fetchPartnershipApplications,
+  getManagedGlobalListings,
+  removeGlobalListing,
+  saveGlobalListing,
+  setGlobalListingPublication,
+  updatePartnershipStatus,
+  type PartnershipApplication,
+} from "@/lib/global-office";
 import {
   BOOKING_STATUSES,
   ENQUIRY_STATUSES,
@@ -153,7 +161,8 @@ export function AdminPage() {
   const [enquiries, setEnquiries] = useState<InboxEnquiry[]>([]);
   // Which inbox is on screen. Bookings first: they are time-critical in a
   // way that an enquiry is not.
-  const [tab, setTab] = useState<"bookings" | "enquiries" | "global-offices">("bookings");
+  const [tab, setTab] = useState<"bookings" | "enquiries" | "partnerships" | "global-offices">("bookings");
+  const [partnerships, setPartnerships] = useState<PartnershipApplication[]>([]);
 
   // ===== GLOBAL OFFICES (SFO Partnership) management =====
   type GlobalOffice = {
@@ -265,12 +274,14 @@ export function AdminPage() {
     setLoading(true);
     // Both inboxes at once: two small reads in parallel beats making the
     // user wait again when they switch tabs.
-    const [bookingRows, enquiryRows] = await Promise.all([
+    const [bookingRows, enquiryRows, partnerRows] = await Promise.all([
       fetchBookings(),
       fetchEnquiries(),
+      fetchPartnershipApplications(),
     ]);
     setBookings(bookingRows);
     setEnquiries(enquiryRows);
+    setPartnerships(partnerRows);
     setLoading(false);
   }, []);
 
@@ -641,17 +652,17 @@ export function AdminPage() {
       {/* Which inbox. Bookings and enquiries are different jobs, so they
           get separate lists rather than one merged feed. */}
       <div className="mb-5 flex gap-1 rounded-full bg-slate-100 p-1">
-        {(["bookings", "enquiries", "global-offices"] as const).map((key) => (
+        {(["bookings", "enquiries", "partnerships", "global-offices"] as const).map((key) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${
+            className={`flex-1 rounded-full px-3 py-2 text-sm font-semibold capitalize transition ${
               tab === key
                 ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-500 hover:text-slate-800"
             }`}
           >
-            {key === "global-offices" ? "Global SFO Offices" : key}
+            {key === "global-offices" ? "Published offices" : key === "partnerships" ? "Partnerships" : key}
             {key === "bookings" && counts.pending > 0 && (
               <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
                 {counts.pending}
@@ -660,6 +671,11 @@ export function AdminPage() {
             {key === "enquiries" && unreadEnquiries > 0 && (
               <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
                 {unreadEnquiries}
+              </span>
+            )}
+            {key === "partnerships" && partnerships.filter((p) => p.pipeline_status === "new").length > 0 && (
+              <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
+                {partnerships.filter((p) => p.pipeline_status === "new").length}
               </span>
             )}
           </button>
@@ -1018,6 +1034,66 @@ export function AdminPage() {
                             const fileExt = file.name.split('.').pop();
                             const fileName = `${Date.now()}.${fileExt}`;
                             const { data, error } = await supabase.storage.from('office-images').upload(fileName, file, { upsert: true });
+                            if (!error && data) {
+                              const { data: urlData } = supabase.storage.from('office-images').getPublicUrl(data.path);
+                              setNewOffice((v) => ({ ...v, image_url: urlData.publicUrl }));
+                            } else {
+                              const reader = new FileReader();
+                              reader.onload = () => setNewOffice((v) => ({ ...v, image_url: reader.result as string }));
+                              reader.readAsDataURL(file);
+                            }
+                          } catch (_) {
+                            const reader = new FileReader();
+                            reader.onload = () => setNewOffice((v) => ({ ...v, image_url: reader.result as string }));
+                            reader.readAsDataURL(file);
+                          }
+                        } else {
+                          const reader = new FileReader();
+                          reader.onload = () => setNewOffice((v) => ({ ...v, image_url: reader.result as string }));
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    {newOffice.image_url && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <img src={newOffice.image_url} alt="Preview" className="h-16 w-24 rounded object-cover border" />
+                        <button type="button" onClick={() => setNewOffice((v) => ({ ...v, image_url: null }))} className="text-xs text-rose-600 hover:underline">Remove</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <Input placeholder="Amenities, comma separated" value={(newOffice.features ?? []).join(", ")} onChange={(e) => setNewOffice((v) => ({ ...v, features: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) }))} />
+                <div className="flex gap-2">
+                  <Button onClick={addOrUpdateOffice}>{editingId ? "Save draft" : "Create draft"}</Button>
+                  {editingId && <Button variant="outline" onClick={cancelEdit}>Cancel</Button>}
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <h2 className="font-display text-xl font-bold text-slate-900">Draft offices ({globalOffices.length})</h2>
+              {globalOffices.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No local drafts yet. Create one to prepare its content before database publishing is enabled.</p> : globalOffices.map((office) => (
+                <article key={office.id} className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex gap-4">
+                      {office.image_url && <img src={office.image_url} alt={office.name} className="h-14 w-20 rounded object-cover border" />}
+                      <div>
+                        <div className="flex items-center gap-2"><h3 className="font-semibold text-slate-900">{office.name}</h3><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${office.status === "published" && office.visibility ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{office.status === "published" && office.visibility ? "Live" : "Draft"}</span></div>
+                        <p className="text-sm text-slate-500">{office.city}, {office.country} · {office.capacity} people</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-2"><Button size="sm" onClick={() => void toggleOfficePublication(office)} className={office.status === "published" && office.visibility ? "bg-slate-700 text-white hover:bg-slate-800" : "bg-[#148f8a] text-white hover:bg-[#1ab5ad]"}>{office.status === "published" && office.visibility ? "Hide" : "Publish"}</Button><Button size="sm" variant="outline" onClick={() => editOffice(office)}>Edit</Button><Button size="sm" variant="outline" className="text-rose-700" onClick={() => void deleteOffice(office.id)}>Delete</Button></div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+    </Shell>
+  );
+}
+
+ileName, file, { upsert: true });
                             if (!error && data) {
                               const { data: urlData } = supabase.storage.from('office-images').getPublicUrl(data.path);
                               setNewOffice((v) => ({ ...v, image_url: urlData.publicUrl }));

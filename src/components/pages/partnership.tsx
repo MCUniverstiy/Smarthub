@@ -172,9 +172,9 @@ export function PartnershipPage() {
   return (
     <>
       <PageHero
-        eyebrow="Global Single Family Offices"
-        title="Partner with us worldwide."
-        lead="List your offices in Singapore, China, Cyprus and beyond. Let companies from around the world book premium SFO space through SmartHub."
+        eyebrow="Office hosting partnership"
+        title="Host your office with SmartHub."
+        lead="Other companies apply here to list their spaces on our network. SmartHub reviews every application and decides what goes live."
         image="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=2400&q=80"
         height="md"
       />
@@ -216,9 +216,9 @@ export function PartnershipPage() {
       <section className="py-20 bg-white" id="partnership-form">
         <div className="mx-auto max-w-3xl px-6">
           <SectionHeading
-            eyebrow="Become a Global Partner"
-            title="List your office or set up a new SFO hub"
-            lead="Companies from around the world are looking for trusted single-family office partners. Tell us about your location and we’ll help you get listed and bookable."
+            eyebrow="Apply to host with us"
+            title="Tell us about the office you want to list"
+            lead="This form is for companies that want SmartHub to host and book their space. We review every application before anything is published."
             align="center"
           />
 
@@ -235,7 +235,12 @@ export function PartnershipPage() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="mt-10 space-y-6 rounded-3xl border bg-white p-8 shadow-xl">
+            <form
+              onSubmit={handleSubmit}
+              method="post"
+              action="#/partnership"
+              className="mt-10 space-y-6 rounded-3xl border bg-white p-8 shadow-xl"
+            >
               <div className="grid gap-5 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Full Name *</label>
