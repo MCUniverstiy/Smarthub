@@ -177,6 +177,9 @@ export function BookingPage() {
   const selectedGlobalListing = globalListings.find((listing) => listing.id === globalListingId);
   const isGlobalBooking = selectedOfficeLocation !== "Hong Kong" || Boolean(selectedGlobalListing);
 
+  // Deliberately a neutral stock photo: this stands in for partner offices in
+  // China / Singapore / Cyprus that have no photo yet, so it must NOT be one of
+  // the Wan Chai pictures — that would show the wrong city.
   const FALLBACK_OFFICE_IMAGE =
     "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80";
 
@@ -631,7 +634,7 @@ export function BookingPage() {
         <PageHero
           eyebrow={b.heroEyebrow}
           title={b.successTitle}
-          image="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=2400&q=80"
+          image="/mainAreaChairs.jpeg"
           height="sm"
         />
         <section className="bg-white py-20 lg:py-24">
@@ -709,7 +712,7 @@ export function BookingPage() {
         eyebrow={b.heroEyebrow}
         title={b.heroTitle}
         lead={b.heroLead}
-        image="https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=2400&q=80"
+        image="/conferenceRoom.jpeg"
         height="md"
       />
 
