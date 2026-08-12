@@ -27,7 +27,8 @@
 
 import { useLang } from "@/lib/i18n/lang-context";
 import { RouterLink } from "@/lib/router";
-import { ROOMS, formatHKD } from "@/lib/booking-data";
+import { formatHKD } from "@/lib/booking-data";
+import { useHongKongRooms } from "@/lib/hong-kong-rooms";
 import { ArrowRight, Users } from "lucide-react";
 
 /**
@@ -50,6 +51,9 @@ export function RoomRates({
 }) {
   const { t, lang } = useLang();
   const b = t.booking;
+  // Read from `public.rooms` so this table shows the rates staff last saved,
+  // and so it can never disagree with the price the booking page quotes.
+  const rooms = useHongKongRooms();
 
   return (
     <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -87,7 +91,7 @@ export function RoomRates({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {ROOMS.map((room) => (
+            {rooms.map((room) => (
               <tr key={room.id} className="transition hover:bg-teal-50/40">
                 <td className="px-6 py-4 font-semibold text-slate-900">
                   <span className="mr-1.5" aria-hidden="true">
@@ -121,7 +125,7 @@ export function RoomRates({
 
       {/* ---------- MOBILE: stacked cards (below sm) ---------- */}
       <ul className="divide-y divide-slate-100 sm:hidden">
-        {ROOMS.map((room) => (
+        {rooms.map((room) => (
           <li key={room.id} className="px-6 py-4">
             <div className="flex items-start justify-between gap-3">
               <div>

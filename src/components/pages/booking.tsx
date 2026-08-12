@@ -86,12 +86,12 @@ import {
   parseISODate,
   PAYMENT_METHODS,
   PaymentMethodId,
-  ROOMS,
   RoomId,
   submitToGoogleForm,
   timeOptions,
   toISODate,
 } from "@/lib/booking-data";
+import { useHongKongRooms } from "@/lib/hong-kong-rooms";
 import {
   createBooking,
   getBusySlots,
@@ -171,6 +171,10 @@ function fill(template: string, values: Record<string, string | number>): string
 export function BookingPage() {
   const { t, lang } = useLang();
   const b = t.booking;
+  // The Wan Chai catalogue, read from `public.rooms` so admin edits show up
+  // here. Starts as the hardcoded list, so there is no empty first paint and
+  // the page still works with no database configured.
+  const hongKongRooms = useHongKongRooms();
   const [selectedOfficeLocation, setSelectedOfficeLocation] = useState("Hong Kong");
   const [globalListings, setGlobalListings] = useState<GlobalListing[]>([]);
   const [globalListingId, setGlobalListingId] = useState("");
@@ -194,9 +198,12 @@ export function BookingPage() {
       emoji: "",
     }));
     if (selectedOfficeLocation === "Hong Kong") {
-      // Published HK listings from admin replace the hardcoded Wan Chai rooms.
-      if (fromDb.length) return fromDb;
-      return ROOMS.map((room) => ({
+      // The Wan Chai rooms come from `public.rooms` (via useHongKongRooms),
+      // which is also the table the booking engine prices and de-conflicts
+      // against. They are NOT replaced by `global_listings` rows: those are
+      // partner offices abroad, they have no availability engine, and a
+      // Hong Kong one would silently shadow a real bookable room.
+      return hongKongRooms.map((room) => ({
         id: room.id,
         kind: "local" as const,
         name: room.name[lang],
@@ -207,7 +214,7 @@ export function BookingPage() {
       }));
     }
     return fromDb;
-  }, [globalListings, lang, selectedOfficeLocation]);
+  }, [globalListings, hongKongRooms, lang, selectedOfficeLocation]);
 
   // Lazy initialiser: seed the form from the URL so `#/book?room=event-space`
   // opens with that room preselected. Reading the hash here (rather than in
@@ -287,7 +294,9 @@ export function BookingPage() {
     []
   );
 
-  const selectedRoom = getRoom(form.roomId);
+  // Look the room up in the live catalogue, not the hardcoded one, so the
+  // capacity check and the price estimate use the rates staff last saved.
+  const selectedRoom = hongKongRooms.find((room) => room.id === form.roomId);
   const estimate = estimateCost(selectedRoom, form.startTime, form.endTime);
 
   /* ================= LIVE AVAILABILITY =================
@@ -627,7 +636,7 @@ export function BookingPage() {
      repeats the booked details so the visitor has them in writing
      before our confirmation email arrives. */
   if (status === "success" && submitted) {
-    const room = getRoom(submitted.roomId);
+    const room = hongKongRooms.find((r) => r.id === submitted.roomId);
     const cost = estimateCost(room, submitted.startTime, submitted.endTime);
     return (
       <>
