@@ -26,6 +26,7 @@ import {
 
 import { companyFacts } from "@/lib/site-data";
 import { searchGlobalListings, submitSfoEnquiry } from "@/lib/global-office";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 interface GlobalOffice {
   id: string;
@@ -34,8 +35,6 @@ interface GlobalOffice {
   city: string;
   description: string;
   capacity: number;
-  rate: number;
-  unit: "hour" | "day";
   image?: string;
   features: string[];
 }
@@ -49,8 +48,6 @@ const SAMPLE_GLOBAL_OFFICES: GlobalOffice[] = [
     city: "Wan Chai",
     description: "Professional meeting and private office space in Wan Chai, with reception support and flexible booking for visiting teams.",
     capacity: 10,
-    rate: 500,
-    unit: "hour",
     features: ["Meeting rooms", "Reception", "High-speed internet", "Central location"],
   },
   {
@@ -60,8 +57,6 @@ const SAMPLE_GLOBAL_OFFICES: GlobalOffice[] = [
     city: "Singapore",
     description: "Premium single-family office space in the heart of Singapore's financial district. Full compliance, private boardrooms and 24/7 access.",
     capacity: 12,
-    rate: 680,
-    unit: "hour",
     features: ["Private boardroom", "24/7 access", "Concierge", "Secure vaults", "Compliance support"],
   },
   {
@@ -71,8 +66,6 @@ const SAMPLE_GLOBAL_OFFICES: GlobalOffice[] = [
     city: "Shanghai",
     description: "High-end serviced family office in Lujiazui. Mandarin + English support, direct CEPA access and on-site legal counsel.",
     capacity: 8,
-    rate: 520,
-    unit: "hour",
     features: ["Mandarin & English", "CEPA structuring", "Legal counsel", "Private meeting rooms", "High-speed secure internet"],
   },
   {
@@ -82,8 +75,6 @@ const SAMPLE_GLOBAL_OFFICES: GlobalOffice[] = [
     city: "Limassol",
     description: "EU-based family office with favourable tax regime. Ideal for European and Asian families seeking a Mediterranean base.",
     capacity: 10,
-    rate: 420,
-    unit: "hour",
     features: ["EU passporting", "Tax optimisation", "Private beach access", "Family lounge", "Visa support"],
   },
 ];
@@ -119,8 +110,6 @@ export function PartnershipPage() {
           city: row.city,
           description: row.description_html.replace(/<[^>]*>/g, "") || "Premium global office listing.",
           capacity: row.capacity,
-          rate: Number(row.rate),
-          unit: row.rate_unit,
           image: row.image_url || undefined,
           features: row.amenities || [],
         })));
@@ -136,6 +125,11 @@ export function PartnershipPage() {
     e.preventDefault();
     if (!form.fullName || !form.email || !form.company) {
       alert("Please fill in name, email and company.");
+      return;
+    }
+
+    if (!isSupabaseConfigured) {
+      alert("The partnership enquiry service is not configured yet. Please email partnerships@smarthub.com directly.");
       return;
     }
 
@@ -158,6 +152,8 @@ export function PartnershipPage() {
       setForm({ fullName: "", email: "", phone: "", company: "", country: "", officeLocation: "", message: "" });
     } else {
       setStatus("error");
+      // Show a helpful alert so users know what happened
+      alert(result.message || "Could not submit the enquiry. Please try again later or email us directly.");
     }
   }
 
@@ -312,33 +308,7 @@ export function PartnershipPage() {
         </div>
       </section>
 
-      {/* HOW IT WORKS FOR PARTNERS */}
-      <section className="bg-white py-16 border-t">
-        <div className="mx-auto max-w-6xl px-6">
-          <SectionHeading 
-            eyebrow="How it works" 
-            title="From enquiry to live booking in days" 
-            align="center" 
-          />
 
-          <div className="mt-10 grid md:grid-cols-4 gap-6">
-            {[
-              "1. Submit enquiry above",
-              "2. Our team reviews & improves description",
-              "3. We list your office on the global booking platform",
-              "4. Companies worldwide can instantly book your space"
-            ].map((step, i) => (
-              <div key={i} className="rounded-2xl border p-5 text-sm font-medium text-slate-700">
-                {step}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-sm text-slate-600">Already a partner? Our team will contact you with the next steps for managing your office listing.</p>
-          </div>
-        </div>
-      </section>
 
       {/* FINAL CTA */}
       <div className="bg-gradient-to-r from-teal-950 to-slate-950 py-12 text-center text-white">

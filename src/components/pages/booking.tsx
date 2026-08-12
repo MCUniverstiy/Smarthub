@@ -685,32 +685,7 @@ export function BookingPage() {
         height="md"
       />
 
-      {/* ===== HOW IT WORKS ===== */}
-      {/* Three numbered cards that set expectations before the visitor
-          reaches the form (lead time, confirmation, invoicing). */}
-      <section className="border-b border-slate-100 bg-white py-14">
-        <div className="mx-auto max-w-7xl px-6">
-          <h2 className="mb-8 text-center font-display text-sm font-bold uppercase tracking-[0.18em] text-slate-500">
-            {b.stepsTitle}
-          </h2>
-          <div className="grid gap-6 md:grid-cols-3">
-            {b.steps.map((step, i) => (
-              <div
-                key={i}
-                className="relative rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 font-display text-sm font-bold text-white">
-                  {i + 1}
-                </div>
-                <h3 className="mt-4 font-display text-base font-bold text-slate-900">
-                  {step.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* Global locations come first. The Hong Kong room catalogue below remains
           the local booking experience. */}

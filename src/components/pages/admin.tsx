@@ -163,9 +163,8 @@ export function AdminPage() {
     city: string;
     description: string;
     capacity: number;
-    rate: number;
-    unit: "hour" | "day";
     features: string[];
+    image_url?: string | null;
     status?: "draft" | "review" | "published" | "hidden" | "archived";
     visibility?: boolean;
   };
@@ -178,16 +177,15 @@ export function AdminPage() {
     city: "",
     description: "",
     capacity: 8,
-    rate: 450,
-    unit: "hour",
     features: ["Private boardroom", "24/7 access", "Compliance support"],
+    image_url: null,
   });
 
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const loadGlobalOffices = useCallback(async () => {
     const rows = await getManagedGlobalListings();
-    setGlobalOffices(rows.map((row) => ({ id: row.id, name: row.name, country: row.country, city: row.city, description: row.description_html, capacity: row.capacity, rate: Number(row.rate), unit: row.rate_unit, features: row.amenities || [], status: row.status, visibility: row.visibility })));
+    setGlobalOffices(rows.map((row) => ({ id: row.id, name: row.name, country: row.country, city: row.city, description: row.description_html, capacity: row.capacity, features: row.amenities || [], image_url: row.image_url, status: row.status, visibility: row.visibility })));
   }, []);
 
   useEffect(() => { void loadGlobalOffices(); }, [loadGlobalOffices]);
@@ -205,20 +203,19 @@ export function AdminPage() {
       city: newOffice.city!,
       description: newOffice.description!,
       capacity: Number(newOffice.capacity) || 8,
-      rate: Number(newOffice.rate) || 450,
-      unit: newOffice.unit || "hour",
       features: Array.isArray(newOffice.features) ? newOffice.features : ["Private boardroom", "24/7 access"],
+      image_url: newOffice.image_url || null,
     };
 
     const saved = await saveGlobalListing({
       id: editingId || undefined, name: office.name, country: office.country, city: office.city,
-      description_html: office.description, capacity: office.capacity, rate: office.rate,
-      rate_unit: office.unit, amenities: office.features,
+      description_html: office.description, capacity: office.capacity, amenities: office.features,
+      image_url: office.image_url,
     });
     if (!saved.ok) { alert(saved.message || "Could not save the listing. Run the global-office SQL migration first."); return; }
     await loadGlobalOffices();
     setEditingId(null);
-    setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, rate: 450, unit: "hour", features: ["Private boardroom", "24/7 access"] });
+    setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
   };
 
   const editOffice = (office: GlobalOffice) => {
@@ -242,7 +239,7 @@ export function AdminPage() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, rate: 450, unit: "hour", features: ["Private boardroom", "24/7 access"] });
+    setNewOffice({ name: "", country: "Singapore", city: "", description: "", capacity: 8, features: ["Private boardroom", "24/7 access"] });
   };
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<BookingStatus | "all">("pending");
@@ -1007,7 +1004,47 @@ export function AdminPage() {
                 <textarea className="min-h-28 w-full rounded-md border border-slate-200 p-3 text-sm" placeholder="Public listing description" value={newOffice.description ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, description: e.target.value }))} />
                 <div className="grid grid-cols-2 gap-3">
                   <Input type="number" min="1" placeholder="Capacity" value={newOffice.capacity ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, capacity: Number(e.target.value) }))} />
-                  <Input type="number" min="0" placeholder="HKD rate" value={newOffice.rate ?? ""} onChange={(e) => setNewOffice((v) => ({ ...v, rate: Number(e.target.value) }))} />
+                  <div>
+                    <label className="text-xs text-slate-500 block mb-1">Office image (optional)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="text-sm file:mr-3 file:rounded file:border-0 file:bg-teal-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-teal-700"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (supabase) {
+                          try {
+                            const fileExt = file.name.split('.').pop();
+                            const fileName = `${Date.now()}.${fileExt}`;
+                            const { data, error } = await supabase.storage.from('office-images').upload(fileName, file, { upsert: true });
+                            if (!error && data) {
+                              const { data: urlData } = supabase.storage.from('office-images').getPublicUrl(data.path);
+                              setNewOffice((v) => ({ ...v, image_url: urlData.publicUrl }));
+                            } else {
+                              const reader = new FileReader();
+                              reader.onload = () => setNewOffice((v) => ({ ...v, image_url: reader.result as string }));
+                              reader.readAsDataURL(file);
+                            }
+                          } catch (_) {
+                            const reader = new FileReader();
+                            reader.onload = () => setNewOffice((v) => ({ ...v, image_url: reader.result as string }));
+                            reader.readAsDataURL(file);
+                          }
+                        } else {
+                          const reader = new FileReader();
+                          reader.onload = () => setNewOffice((v) => ({ ...v, image_url: reader.result as string }));
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    {newOffice.image_url && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <img src={newOffice.image_url} alt="Preview" className="h-16 w-24 rounded object-cover border" />
+                        <button type="button" onClick={() => setNewOffice((v) => ({ ...v, image_url: null }))} className="text-xs text-rose-600 hover:underline">Remove</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <Input placeholder="Amenities, comma separated" value={(newOffice.features ?? []).join(", ")} onChange={(e) => setNewOffice((v) => ({ ...v, features: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) }))} />
                 <div className="flex gap-2">
@@ -1020,7 +1057,16 @@ export function AdminPage() {
               <h2 className="font-display text-xl font-bold text-slate-900">Draft offices ({globalOffices.length})</h2>
               {globalOffices.length === 0 ? <p className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No local drafts yet. Create one to prepare its content before database publishing is enabled.</p> : globalOffices.map((office) => (
                 <article key={office.id} className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><h3 className="font-semibold text-slate-900">{office.name}</h3><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${office.status === "published" && office.visibility ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{office.status === "published" && office.visibility ? "Live" : "Draft"}</span></div><p className="text-sm text-slate-500">{office.city}, {office.country} · {office.capacity} people · HK${office.rate}/{office.unit}</p></div><div className="flex flex-wrap justify-end gap-2"><Button size="sm" onClick={() => void toggleOfficePublication(office)} className={office.status === "published" && office.visibility ? "bg-slate-700 text-white hover:bg-slate-800" : "bg-[#148f8a] text-white hover:bg-[#1ab5ad]"}>{office.status === "published" && office.visibility ? "Hide" : "Publish"}</Button><Button size="sm" variant="outline" onClick={() => editOffice(office)}>Edit</Button><Button size="sm" variant="outline" className="text-rose-700" onClick={() => void deleteOffice(office.id)}>Delete</Button></div></div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex gap-4">
+                      {office.image_url && <img src={office.image_url} alt={office.name} className="h-14 w-20 rounded object-cover border" />}
+                      <div>
+                        <div className="flex items-center gap-2"><h3 className="font-semibold text-slate-900">{office.name}</h3><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${office.status === "published" && office.visibility ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{office.status === "published" && office.visibility ? "Live" : "Draft"}</span></div>
+                        <p className="text-sm text-slate-500">{office.city}, {office.country} · {office.capacity} people</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-2"><Button size="sm" onClick={() => void toggleOfficePublication(office)} className={office.status === "published" && office.visibility ? "bg-slate-700 text-white hover:bg-slate-800" : "bg-[#148f8a] text-white hover:bg-[#1ab5ad]"}>{office.status === "published" && office.visibility ? "Hide" : "Publish"}</Button><Button size="sm" variant="outline" onClick={() => editOffice(office)}>Edit</Button><Button size="sm" variant="outline" className="text-rose-700" onClick={() => void deleteOffice(office.id)}>Delete</Button></div>
+                  </div>
                 </article>
               ))}
             </div>
