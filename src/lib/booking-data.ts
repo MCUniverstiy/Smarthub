@@ -166,8 +166,7 @@ export const ROOMS: Room[] = [
     rate: 500,
     unit: "hour",
     emoji: "🏢",
-    image:
-      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80",
+    image: "/conferenceRoom.jpeg",
     formValue: "Meeting Room A / 會議室 A / 会议室 A",
   },
   {
@@ -182,8 +181,7 @@ export const ROOMS: Room[] = [
     rate: 350,
     unit: "day",
     emoji: "💻",
-    image:
-      "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80",
+    image: "/hotDesk.jpeg",
     formValue: "Hot Desk / 共享工位 / 共享工位",
   },
   {
@@ -198,8 +196,7 @@ export const ROOMS: Room[] = [
     rate: 800,
     unit: "hour",
     emoji: "🏢",
-    image:
-      "https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=1200&q=80",
+    image: "/mainAreaKaraoke.jpeg",
     formValue: "Meeting Room B / 會議室 B / 会议室 B",
   },
   {
@@ -214,8 +211,7 @@ export const ROOMS: Room[] = [
     rate: 1000,
     unit: "hour",
     emoji: "🎤",
-    image:
-      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80",
+    image: "/mainAreaChairs.jpeg",
     formValue: "Event Space / 活動場地 / 活动场地",
   },
   {
@@ -230,8 +226,7 @@ export const ROOMS: Room[] = [
     rate: 300,
     unit: "hour",
     emoji: "🏢",
-    image:
-      "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80",
+    image: "/sofaRoom.jpeg",
     formValue: "Meeting Room C / 會議室 C / 会议室 C",
   },
   {
@@ -246,8 +241,7 @@ export const ROOMS: Room[] = [
     rate: 300,
     unit: "hour",
     emoji: "👔",
-    image:
-      "https://images.unsplash.com/photo-1568992687947-868a62a9f521?auto=format&fit=crop&w=1200&q=80",
+    image: "/managerRoom.jpeg",
     formValue: "Director Room / 總監辦公室 / 总监办公室",
   },
 ];

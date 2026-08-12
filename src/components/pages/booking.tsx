@@ -86,12 +86,12 @@ import {
   parseISODate,
   PAYMENT_METHODS,
   PaymentMethodId,
-  ROOMS,
   RoomId,
   submitToGoogleForm,
   timeOptions,
   toISODate,
 } from "@/lib/booking-data";
+import { useHongKongRooms } from "@/lib/hong-kong-rooms";
 import {
   createBooking,
   getBusySlots,
@@ -171,12 +171,19 @@ function fill(template: string, values: Record<string, string | number>): string
 export function BookingPage() {
   const { t, lang } = useLang();
   const b = t.booking;
+  // The Wan Chai catalogue, read from `public.rooms` so admin edits show up
+  // here. Starts as the hardcoded list, so there is no empty first paint and
+  // the page still works with no database configured.
+  const hongKongRooms = useHongKongRooms();
   const [selectedOfficeLocation, setSelectedOfficeLocation] = useState("Hong Kong");
   const [globalListings, setGlobalListings] = useState<GlobalListing[]>([]);
   const [globalListingId, setGlobalListingId] = useState("");
   const selectedGlobalListing = globalListings.find((listing) => listing.id === globalListingId);
   const isGlobalBooking = selectedOfficeLocation !== "Hong Kong" || Boolean(selectedGlobalListing);
 
+  // Deliberately a neutral stock photo: this stands in for partner offices in
+  // China / Singapore / Cyprus that have no photo yet, so it must NOT be one of
+  // the Wan Chai pictures — that would show the wrong city.
   const FALLBACK_OFFICE_IMAGE =
     "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80";
 
@@ -191,9 +198,12 @@ export function BookingPage() {
       emoji: "",
     }));
     if (selectedOfficeLocation === "Hong Kong") {
-      // Published HK listings from admin replace the hardcoded Wan Chai rooms.
-      if (fromDb.length) return fromDb;
-      return ROOMS.map((room) => ({
+      // The Wan Chai rooms come from `public.rooms` (via useHongKongRooms),
+      // which is also the table the booking engine prices and de-conflicts
+      // against. They are NOT replaced by `global_listings` rows: those are
+      // partner offices abroad, they have no availability engine, and a
+      // Hong Kong one would silently shadow a real bookable room.
+      return hongKongRooms.map((room) => ({
         id: room.id,
         kind: "local" as const,
         name: room.name[lang],
@@ -204,7 +214,7 @@ export function BookingPage() {
       }));
     }
     return fromDb;
-  }, [globalListings, lang, selectedOfficeLocation]);
+  }, [globalListings, hongKongRooms, lang, selectedOfficeLocation]);
 
   // Lazy initialiser: seed the form from the URL so `#/book?room=event-space`
   // opens with that room preselected. Reading the hash here (rather than in
@@ -284,7 +294,9 @@ export function BookingPage() {
     []
   );
 
-  const selectedRoom = getRoom(form.roomId);
+  // Look the room up in the live catalogue, not the hardcoded one, so the
+  // capacity check and the price estimate use the rates staff last saved.
+  const selectedRoom = hongKongRooms.find((room) => room.id === form.roomId);
   const estimate = estimateCost(selectedRoom, form.startTime, form.endTime);
 
   /* ================= LIVE AVAILABILITY =================
@@ -624,14 +636,14 @@ export function BookingPage() {
      repeats the booked details so the visitor has them in writing
      before our confirmation email arrives. */
   if (status === "success" && submitted) {
-    const room = getRoom(submitted.roomId);
+    const room = hongKongRooms.find((r) => r.id === submitted.roomId);
     const cost = estimateCost(room, submitted.startTime, submitted.endTime);
     return (
       <>
         <PageHero
           eyebrow={b.heroEyebrow}
           title={b.successTitle}
-          image="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=2400&q=80"
+          image="/mainAreaChairs.jpeg"
           height="sm"
         />
         <section className="bg-white py-20 lg:py-24">
@@ -709,7 +721,7 @@ export function BookingPage() {
         eyebrow={b.heroEyebrow}
         title={b.heroTitle}
         lead={b.heroLead}
-        image="https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=2400&q=80"
+        image="/conferenceRoom.jpeg"
         height="md"
       />
 

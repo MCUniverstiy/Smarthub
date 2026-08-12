@@ -645,7 +645,7 @@ export type DeleteResult =
   | { ok: false; message: string };
 
 async function callDelete(
-  fn: "delete_booking" | "delete_enquiry",
+  fn: "delete_booking" | "delete_enquiry" | "delete_global_booking",
   reference: string,
   reason?: string
 ): Promise<DeleteResult> {
@@ -676,12 +676,83 @@ async function callDelete(
   }
 }
 
-/** Delete a booking. Archived first; recoverable via `restore_deleted`. */
+/**
+ * Delete a booking. Archived first; recoverable via `restore_deleted`.
+ *
+ * Two kinds of booking share this button. Wan Chai bookings live in
+ * `bookings` and go through `delete_booking`. Partner-office requests
+ * (China / Singapore / Cyprus, references starting `GO-`) live in
+ * `global_booking_requests` and go through `delete_global_booking`.
+ *
+ * `delete_booking` is not an error when the reference is unknown — it
+ * answers `deleted: false` — so a `GO-` row would silently stay put
+ * without this second attempt. If the partner RPC has not been
+ * installed yet (supabase/delete-global-booking.sql), fall back to a
+ * plain DELETE on the table, which works wherever staff hold the
+ * grant from global-bookings-inbox.sql.
+ */
 export async function deleteBooking(
   reference: string,
   reason?: string
 ): Promise<DeleteResult> {
-  return callDelete("delete_booking", reference, reason);
+  const partnerFirst = reference.startsWith("GO-");
+
+  if (!partnerFirst) {
+    const local = await callDelete("delete_booking", reference, reason);
+    if (!local.ok || local.deleted) return local;
+  }
+
+  const partner = await callDelete("delete_global_booking", reference, reason);
+  if (partner.ok && partner.deleted) return partner;
+
+  // RPC missing (function not installed) — try the table directly.
+  if (!partner.ok && isMissingFunction(partner.message)) {
+    const direct = await deletePartnerBookingRow(reference);
+    if (direct.ok && direct.deleted) return direct;
+    if (!direct.ok) return direct;
+  }
+
+  if (partnerFirst) {
+    // A `GO-` reference that no partner path could remove: give the
+    // local table a turn before admitting defeat.
+    const local = await callDelete("delete_booking", reference, reason);
+    if (!local.ok || local.deleted) return local;
+  }
+
+  return partner.ok ? partner : { ok: true, deleted: false };
+}
+
+/** PostgREST says PGRST202 when the RPC does not exist under that name. */
+function isMissingFunction(message: string): boolean {
+  return /PGRST202|could not find the function|does not exist|schema cache/i.test(
+    message
+  );
+}
+
+/** Last-resort delete straight off global_booking_requests. */
+async function deletePartnerBookingRow(reference: string): Promise<DeleteResult> {
+  if (!supabase) return { ok: false, message: "Supabase is not configured." };
+  try {
+    const { data, error } = await supabase
+      .from("global_booking_requests")
+      .delete()
+      .eq("reference", reference)
+      .select("reference");
+    if (error) {
+      const denied = /permission denied|insufficient|row-level security/i.test(
+        error.message
+      );
+      return {
+        ok: false,
+        message: denied
+          ? "Only staff can delete bookings. Run supabase/delete-global-booking.sql to enable partner deletes."
+          : error.message,
+      };
+    }
+    return { ok: true, deleted: (data?.length ?? 0) > 0 };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Network error" };
+  }
 }
 
 /** Delete an enquiry. Archived first; recoverable via `restore_deleted`. */

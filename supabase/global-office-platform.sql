@@ -259,3 +259,41 @@ end $$;
 revoke all on function public.delete_sfo_enquiry(text) from public;
 grant execute on function public.delete_sfo_enquiry(text) to authenticated;
 grant delete on public.sfo_enquiries to authenticated;
+
+-- Staff may delete partner-office bookings (plain DELETE is not granted).
+-- Rows are archived into public.deleted_records first, so Undo is real.
+-- Full version with the matching restore_deleted branch, plus notes:
+-- supabase/delete-global-booking.sql
+-- deleted_records comes from deletes.sql, which may not have been run yet;
+-- widen its kind check only if the archive is actually there.
+do $$
+begin
+  if to_regclass('public.deleted_records') is not null then
+    alter table public.deleted_records drop constraint if exists deleted_records_kind_check;
+    alter table public.deleted_records add constraint deleted_records_kind_check check (kind in ('booking','enquiry','global_booking'));
+  end if;
+end $$;
+
+create or replace function public.delete_global_booking(p_reference text, p_reason text default null)
+returns table(deleted boolean, reference text)
+language plpgsql volatile security definer set search_path = public as $$
+declare target public.global_booking_requests%rowtype; actor uuid := auth.uid();
+begin
+  if not public.is_staff() then
+    raise exception 'Only staff can delete bookings' using errcode = 'insufficient_privilege';
+  end if;
+  select * into target from public.global_booking_requests g where g.reference = p_reference;
+  if not found then
+    return query select false, p_reference;
+    return;
+  end if;
+  insert into public.deleted_records (kind, reference, payload, deleted_by, deleted_email, reason)
+  values ('global_booking', target.reference, to_jsonb(target), actor,
+          (select email from auth.users where id = actor),
+          nullif(btrim(coalesce(p_reason, '')), ''));
+  delete from public.global_booking_requests g where g.reference = p_reference;
+  return query select true, p_reference;
+end $$;
+
+revoke all on function public.delete_global_booking(text, text) from public;
+grant execute on function public.delete_global_booking(text, text) to authenticated;

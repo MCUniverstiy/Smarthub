@@ -39,7 +39,8 @@ import { Button } from "@/components/ui/button";
 import { CTABand } from "@/components/blocks/cta-band";
 import { ArrowRight, CalendarDays, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import { heroStats } from "@/lib/site-data";
-import { ROOMS, formatHKD } from "@/lib/booking-data";
+import { formatHKD } from "@/lib/booking-data";
+import { useHongKongRooms } from "@/lib/hong-kong-rooms";
 import Image from "next/image";
 
 // Four stock photos (one per service card) used in the SERVICES PREVIEW grid.
@@ -81,6 +82,9 @@ export function HomePage() {
   const p = pageContent[lang].pages.home;
   // `stats` is the array of {num, label} stat tiles shown in two places.
   const stats = heroStats[lang];
+  // The three quick-pick tiles read the live room catalogue, so a rate edited
+  // in the admin dashboard is the rate advertised on the front page.
+  const quickPickRooms = useHongKongRooms();
 
   return (
     <>
@@ -366,7 +370,7 @@ export function HomePage() {
             {/* Quick-pick tiles for the three most-requested spaces. */}
             <div className="lg:col-span-6">
               <div className="grid gap-3 sm:grid-cols-3">
-                {ROOMS.filter((r) =>
+                {quickPickRooms.filter((r) =>
                   ["meeting-a", "hot-desk", "event-space"].includes(r.id)
                 ).map((room) => (
                   <RouterLink
