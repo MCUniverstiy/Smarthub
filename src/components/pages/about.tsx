@@ -30,6 +30,7 @@ import { SectionHeading } from "@/components/blocks/section-heading";
 import { CTABand } from "@/components/blocks/cta-band";
 import { ShieldCheck, Users, Languages, HeartHandshake } from "lucide-react";
 import Image from "next/image";
+import { mcmEntities } from "@/lib/site-data";
 
 // Lucide icon components paired by index with the 4 values from pageContent.
 // If a 5th value were ever added, the fallback `?? ShieldCheck` keeps it safe.

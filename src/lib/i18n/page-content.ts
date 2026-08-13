@@ -27,13 +27,13 @@ export const pageContent = {
         heroTitle: "Real partnership for",               // First part of big headline
         heroAccent: "Hong Kong business.",               // Gradient-colored second part
         heroLead:                                        // Paragraph below headline
-          "Smarthub Connect is a TCSP-licensed corporate services provider and workspace operator in the heart of Wan Chai — everything you need to incorporate, comply and grow under one roof.",
+          "Smarthub Connect is a corporate services provider and workspace operator in the heart of Wan Chai — everything you need to incorporate, comply and grow under one roof.",
         heroCta1: "Explore Services",                    // Primary button text
         heroCta2: "Book a Tour",                         // Secondary button text
         introEyebrow: "Who We Are",                      // Intro section label
         introTitle: "One partner. Four services. One Wan Chai address.",
         introBody:
-          "Since 2001, Smarthub Connect has helped entrepreneurs, family offices and multinational firms set up and operate in Hong Kong. As a TCSP-licensed provider, we handle incorporation, compliance and workspace — backed by the wider MCM Group ecosystem.",
+          "For more than two decades, Smarthub Connect has helped entrepreneurs, family offices and multinational firms set up and operate in Hong Kong. We handle incorporation, compliance and workspace — backed by the wider MCM Group ecosystem.",
         introCta: "Learn about us",
         servicesEyebrow: "What We Do",
         servicesTitle: "Services built around your Hong Kong operation.",
@@ -57,14 +57,14 @@ export const pageContent = {
       // Used by: src/components/pages/about.tsx
       about: {
         heroEyebrow: "About Smarthub Connect",
-        heroTitle: "Hong Kong's corporate services specialist since 2001.",
+        heroTitle: "Hong Kong's corporate services specialist.",
         heroLead:
           "We are a TCSP-licensed trust and company service provider based in Wan Chai — and part of the MCM Group ecosystem of wealth, fintech and education firms.",
         storyEyebrow: "Our Story",
         storyTitle: "Built for Hong Kong. Built for the long term.",
         storyBody: [
-          "Smarthub Connect Limited was founded in 2001 as the corporate services and workspace arm of MCM Group. From day one, the mission was simple: give entrepreneurs, family offices and multinationals a single, reliable partner for everything required to operate in Hong Kong.",
-          "Over 25 years we have incorporated more than 1,200 Hong Kong and offshore companies, served thousands of workspace clients, and built a bilingual team that speaks English, Cantonese and Mandarin fluently. We hold TCSP licence TC010264 and operate from a Grade-A floor at 25/F, 88 Lockhart Road, Wan Chai — two minutes from the MTR.",
+          "Smarthub Connect Limited is the corporate services and workspace arm of MCM Group. The mission is simple: give entrepreneurs, family offices and multinationals a single, reliable partner for everything required to operate in Hong Kong.",
+          "Over two decades our team has incorporated more than 1,200 Hong Kong and offshore companies, served thousands of workspace clients, and built a bilingual team that speaks English, Cantonese and Mandarin fluently. We operate from a Grade-A floor at 25/F, 88 Lockhart Road, Wan Chai — two minutes from the MTR.",
           "What makes us different is what we don't do: we don't outsource core services, we don't take referral commissions, and we don't pass you between vendors. Your relationship director at Smarthub coordinates every discipline in-house — corporate, workspace, accounting and compliance.",
         ],
         valuesEyebrow: "What We Stand For",
@@ -93,9 +93,9 @@ export const pageContent = {
           "Smarthub Connect is one of six companies under the MCM Group umbrella — alongside Money Concepts (Asia) Holdings, Money Concepts Asset Management, Money Concepts Wealth Management, MC Fintech Solutions and MCU Institute. Clients who start with corporate services can seamlessly access wealth management, fintech infrastructure and professional education through sister entities, all under the same relationship.",
         groupCta: "Speak to our team",
         teamEyebrow: "The Team",
-        teamTitle: "Real people. Real Hong Kong experience.",
+        teamTitle: "A senior Hong Kong team.",
         teamBody:
-          "Our Wan Chai office is staffed by company secretaries, accountants, workspace managers and relationship directors — most of whom have been with Smarthub for over a decade. We don't put junior staff in front of clients; every engagement is led by a senior practitioner who knows your structure inside out.",
+          "Our Wan Chai office is staffed by company secretaries, accountants, workspace managers and relationship directors with decades of professional experience. Every engagement is led by a senior practitioner who knows your structure inside out.",
       },
       // --- SERVICES PAGE content ---
       // Used by: src/components/pages/services.tsx
@@ -155,7 +155,7 @@ export const pageContent = {
           },
           {
             q: "What are your office hours?",
-            a: "Monday to Friday 9:00–18:30, Saturday 10:00–14:00. Office access for tenants is 24/7 via keycard.",
+            a: "Monday to Friday 9:00–18:30. Office access for tenants is 24/7 via keycard.",
           },
           {
             q: "Do you offer refunds if I cancel?",
@@ -220,7 +220,7 @@ export const pageContent = {
         introEyebrow: "關於我們",
         introTitle: "一個夥伴。四項服務。一個灣仔地址。",
         introBody:
-          "自 2001 年起，Smarthub Connect 協助創業家、家族辦公室與跨國企業在香港設立與營運。作為持牌 TCSP 供應商，我們處理成立、合規與工作空間——並由 MCM Group 生態系統支援。",
+          "二十多年來，Smarthub Connect 協助創業家、家族辦公室與跨國企業在香港設立與營運。我們處理成立、合規與工作空間——並由 MCM Group 生態系統支援。",
         introCta: "認識我們",
         servicesEyebrow: "我們做甚麼",
         servicesTitle: "圍繞您香港業務而建的服務。",
@@ -242,14 +242,14 @@ export const pageContent = {
       },
       about: {
         heroEyebrow: "關於 Smarthub Connect",
-        heroTitle: "自 2001 年起——香港企業服務專家。",
+        heroTitle: "香港企業服務專家。",
         heroLead:
           "我哋係持牌信託及公司服務供應商，立足灣仔——並屬 MCM Group 財富、金融科技同教育公司生態系統一員。",
         storyEyebrow: "我們的故事",
         storyTitle: "為香港而建。為長遠而建。",
         storyBody: [
-          "Smarthub Connect Limited 於 2001 年成立，為 MCM Group 旗下企業服務與工作空間臂膀。成立之初，使命簡單：為創業家、家族辦公室與跨國企業提供單一、可靠的香港營運夥伴。",
-          "25 年來，我哋成立咗超過 1,200 間香港及離岸公司，服務數千工作空間客戶，建立咗流利使用英語、粵語同普通話嘅雙語團隊。我哋持有 TCSP 牌照 TC010264，於灣仔駱克道 88 號 25 樓甲級樓層營運——港鐵兩分鐘即達。",
+          "Smarthub Connect Limited 為 MCM Group 旗下企業服務與工作空間臂膀。使命簡單：為創業家、家族辦公室與跨國企業提供單一、可靠的香港營運夥伴。",
+          "二十多年來，我哋成立咗超過 1,200 間香港及離岸公司，服務數千工作空間客戶，建立咗流利使用英語、粵語同普通話嘅雙語團隊。我哋於灣仔駱克道 88 號 25 樓甲級樓層營運——港鐵兩分鐘即達。",
           "我哋嘅分別在於我哋唔做嘅嘢：唔外判核心服務、唔收轉介佣金、唔將您喺供應商之間傳遞。您嘅關係董事喺 Smarthub 內部協調所有紀律——企業、工作空間、會計同合規。",
         ],
         valuesEyebrow: "我們信甚麼",
@@ -278,9 +278,9 @@ export const pageContent = {
           "Smarthub Connect 係 MCM Group 傘下六間公司之一——連同 Money Concepts (Asia) Holdings、Money Concepts Asset Management、Money Concepts Wealth Management、MC Fintech Solutions 同 MCU Institute。由企業服務開始嘅客戶，可無縫接軌姊妹公司嘅財富管理、金融科技基建同專業教育——同一關係之下。",
         groupCta: "聯絡我哋團隊",
         teamEyebrow: "團隊",
-        teamTitle: "真人。真香港經驗。",
+        teamTitle: "資深香港團隊。",
         teamBody:
-          "我哋灣仔辦公室由公司秘書、會計師、工作空間經理同關係董事組成——大部分喺 Smarthub 服務超過十年。我哋唔將初級員工放喺客戶面前；每次合作由認識您架構嘅資深從業員帶領。",
+          "我哋灣仔辦公室由公司秘書、會計師、工作空間經理同關係董事組成——團隊具備數十年專業經驗。每次合作由認識您架構嘅資深從業員帶領。",
       },
       services: {
         heroEyebrow: "我們的服務",
@@ -332,7 +332,7 @@ export const pageContent = {
           },
           {
             q: "營業時間係幾點？",
-            a: "週一至五 9:00–18:30，週六 10:00–14:00。租戶辦公室通行 24/7 智能卡。",
+            a: "週一至五 9:00–18:30。租戶辦公室通行 24/7 智能卡。",
           },
           {
             q: "取消有退款嗎？",
@@ -386,7 +386,7 @@ export const pageContent = {
         introEyebrow: "关于我们",
         introTitle: "一个伙伴。四项服务。一个湾仔地址。",
         introBody:
-          "自 2001 年起，Smarthub Connect 协助创业者、家族办公室与跨国企业在香港设立与运营。作为持牌 TCSP 供应商，我们处理成立、合规与工作空间——并由 MCM Group 生态系统支援。",
+          "二十多年来，Smarthub Connect 协助创业者、家族办公室与跨国企业在香港设立与运营。我们处理成立、合规与工作空间——并由 MCM Group 生态系统支援。",
         introCta: "认识我们",
         servicesEyebrow: "我们做什么",
         servicesTitle: "围绕您香港业务而建的服务。",
@@ -407,14 +407,14 @@ export const pageContent = {
       },
       about: {
         heroEyebrow: "关于 Smarthub Connect",
-        heroTitle: "自 2001 年起——香港企业服务专家。",
+        heroTitle: "香港企业服务专家。",
         heroLead:
           "我们是持牌信托及公司服务供应商，立足湾仔——并属 MCM Group 财富、金融科技与教育公司生态系统一员。",
         storyEyebrow: "我们的故事",
         storyTitle: "为香港而建。为长远而建。",
         storyBody: [
-          "Smarthub Connect Limited 于 2001 年成立，为 MCM Group 旗下企业服务与工作空间臂膀。成立之初，使命简单：为创业者、家族办公室与跨国企业提供单一、可靠的香港营运伙伴。",
-          "25 年来，我们成立了超过 1,200 间香港及离岸公司，服务数千工作空间客户，建立了流利使用英语、粤语与普通话的双语团队。我们持有 TCSP 牌照 TC010264，于湾仔骆克道 88 号 25 楼甲级楼层营运——地铁两分钟即达。",
+          "Smarthub Connect Limited 为 MCM Group 旗下企业服务与工作空间臂膀。使命简单：为创业者、家族办公室与跨国企业提供单一、可靠的香港营运伙伴。",
+          "二十多年来，我们成立了超过 1,200 间香港及离岸公司，服务数千工作空间客户，建立了流利使用英语、粤语与普通话的双语团队。我们于湾仔骆克道 88 号 25 楼甲级楼层营运——地铁两分钟即达。",
           "我们的分别在于我们不做的事：不外判核心服务、不收转介佣金、不将您在供应商之间传递。您的关系董事在 Smarthub 内部协调所有纪律——企业、工作空间、会计与合规。",
         ],
         valuesEyebrow: "我们信什么",
@@ -443,9 +443,9 @@ export const pageContent = {
           "Smarthub Connect 是 MCM Group 伞下六间公司之一——连同 Money Concepts (Asia) Holdings、Money Concepts Asset Management、Money Concepts Wealth Management、MC Fintech Solutions 与 MCU Institute。由企业服务开始的客户，可无缝接轨姊妹公司的财富管理、金融科技基建与专业教育——同一关系之下。",
         groupCta: "联络我们团队",
         teamEyebrow: "团队",
-        teamTitle: "真人。真香港经验。",
+        teamTitle: "资深香港团队。",
         teamBody:
-          "我们湾仔办公室由公司秘书、会计师、工作空间经理与关系董事组成——大部分在 Smarthub 服务超过十年。我们不将初级员工放在客户面前；每次合作由认识您架构的资深从业员带领。",
+          "我们湾仔办公室由公司秘书、会计师、工作空间经理与关系董事组成——团队具备数十年专业经验。每次合作由认识您架构的资深从业员带领。",
       },
       services: {
         heroEyebrow: "我们的服务",
@@ -497,7 +497,7 @@ export const pageContent = {
           },
           {
             q: "营业时间是几点？",
-            a: "周一至五 9:00–18:30，周六 10:00–14:00。租户办公室通行 24/7 智能卡。",
+            a: "周一至五 9:00–18:30。租户办公室通行 24/7 智能卡。",
           },
           {
             q: "取消有退款吗？",

@@ -109,7 +109,7 @@ export const translations = {
     // email, TCSP licence badge). Used by the Navbar component's top row.
     topbar: {
       phone: "+852 2383 3283",
-      whatsapp: "WhatsApp 5501 3516",
+      whatsapp: "5501 3516",
       email: "info@smarthubc.com",
       licence: "TCSP Licensed · TC010264",
     },
@@ -121,13 +121,13 @@ export const translations = {
       eyebrow: "Hong Kong · Est. Wan Chai",
       title: "Your gateway to",
       titleAccent: "Hong Kong business.",
-      lead: "Smarthub Connect is a TCSP-licensed corporate services provider and workspace operator in the heart of Wan Chai — everything you need to incorporate, comply and grow under one roof.",
+      lead: "Smarthub Connect is a corporate services provider and workspace operator in the heart of Wan Chai — everything you need to incorporate, comply and grow under one roof.",
       ctaPrimary: "Explore Services",
       ctaSecondary: "Book a Tour",
       stats: [
-        { num: "25+", label: "Years in Hong Kong" },
+        { num: "20+", label: "Years of experience" },
         { num: "1,200+", label: "Companies Served" },
-        { num: "TC010264", label: "TCSP Licensed" },
+        { num: "Grade-A", label: "Wan Chai office" },
         { num: "24/7", label: "Access Available" },
       ],
     },
@@ -137,7 +137,7 @@ export const translations = {
     about: {
       eyebrow: "About Smarthub Connect",
       title: "One partner for incorporation, compliance and workspace.",
-      body: "Since 2001, Smarthub Connect has helped entrepreneurs, family offices and multinational firms set up and operate in Hong Kong. As a TCSP-licensed trust and company service provider, we handle incorporation, ongoing secretarial work, accounting, audit and tax — then back it with Grade-A serviced offices, virtual offices and meeting rooms at 25/F, 88 Lockhart Road, Wan Chai.",
+      body: "For more than two decades, Smarthub Connect has helped entrepreneurs, family offices and multinational firms set up and operate in Hong Kong. We handle incorporation, ongoing secretarial work, accounting, audit and tax — then back it with Grade-A serviced offices, virtual offices and meeting rooms at 25/F, 88 Lockhart Road, Wan Chai.",
       body2:
         "We are part of the MCM Group ecosystem, which means clients can seamlessly access wealth management, fintech and professional education through our sister entities — but Smarthub itself stays focused on what it does best: keeping your Hong Kong operation compliant, professional and always office-ready.",
       points: [
@@ -347,7 +347,7 @@ export const translations = {
     stats: {
       title: "Numbers that matter.",
       items: [
-        { num: "25+", label: "Years in Hong Kong" },
+        { num: "20+", label: "Years of experience" },
         { num: "1,200+", label: "Companies Incorporated" },
         { num: "98%", label: "Client Retention" },
         { num: "6", label: "Languages Spoken" },
@@ -422,7 +422,7 @@ export const translations = {
         whatsappLabel: "WhatsApp",
         emailLabel: "Email",
         hoursLabel: "Hours",
-        hours: "Mon–Fri 9:00–18:30 · Sat 10:00–14:00",
+        hours: "Mon–Fri 9:00–18:30",
       },
     },
     // footer — site-wide footer: tagline, 3 column headings (explore,
@@ -480,7 +480,7 @@ export const translations = {
     },
     topbar: {
       phone: "+852 2383 3283",
-      whatsapp: "WhatsApp 5501 3516",
+      whatsapp: "5501 3516",
       email: "info@smarthubc.com",
       licence: "TCSP 持牌 · TC010264",
     },
@@ -492,16 +492,16 @@ export const translations = {
       ctaPrimary: "探索服務",
       ctaSecondary: "預約參觀",
       stats: [
-        { num: "25+", label: "扎根香港年數" },
+        { num: "20+", label: "專業經驗年數" },
         { num: "1,200+", label: "服務公司數目" },
-        { num: "TC010264", label: "TCSP 持牌" },
+        { num: "甲級", label: "灣仔寫字樓" },
         { num: "24/7", label: "全天候通行" },
       ],
     },
     about: {
       eyebrow: "關於 Smarthub Connect",
       title: "成立、合規、辦公空間——一個夥伴搞掂。",
-      body: "自 2001 年起，Smarthub Connect 協助創業家、家族辦公室與跨國企業在香港設立與營運。我們是持牌信託及公司服務供應商 (TCSP TC010264)，提供公司成立、秘書、會計、審計與稅務服務，並於灣臣駱克道 88 號 25 樓設有甲級服務式辦公室、虛擬辦公室及會議室。",
+      body: "二十多年來，Smarthub Connect 協助創業家、家族辦公室與跨國企業在香港設立與營運。我們是持牌信託及公司服務供應商 (TCSP TC010264)，提供公司成立、秘書、會計、審計與稅務服務，並於灣臣駱克道 88 號 25 樓設有甲級服務式辦公室、虛擬辦公室及會議室。",
       body2:
         "我們屬於 MCM Group 生態系統，客戶可無縫接軌財富管理、金融科技與專業教育等姊妹公司服務——但 Smarthub 始終專注於最擅長的領域：確保您的香港業務合規、專業、辦公無憂。",
       points: [
@@ -691,7 +691,7 @@ export const translations = {
     stats: {
       title: "重要的數字。",
       items: [
-        { num: "25+", label: "扎根香港年數" },
+        { num: "20+", label: "專業經驗年數" },
         { num: "1,200+", label: "成立公司數目" },
         { num: "98%", label: "客戶續約率" },
         { num: "6", label: "可用語言" },
@@ -755,7 +755,7 @@ export const translations = {
         whatsappLabel: "WhatsApp",
         emailLabel: "電郵",
         hoursLabel: "營業時間",
-        hours: "週一至五 9:00–18:30 · 週六 10:00–14:00",
+        hours: "週一至五 9:00–18:30",
       },
     },
     footer: {
@@ -806,7 +806,7 @@ export const translations = {
     },
     topbar: {
       phone: "+852 2383 3283",
-      whatsapp: "WhatsApp 5501 3516",
+      whatsapp: "5501 3516",
       email: "info@smarthubc.com",
       licence: "TCSP 持牌 · TC010264",
     },
@@ -818,16 +818,16 @@ export const translations = {
       ctaPrimary: "探索服务",
       ctaSecondary: "预约参观",
       stats: [
-        { num: "25+", label: "扎根香港年数" },
+        { num: "20+", label: "专业经验年数" },
         { num: "1,200+", label: "服务公司数目" },
-        { num: "TC010264", label: "TCSP 持牌" },
+        { num: "甲级", label: "湾仔写字楼" },
         { num: "24/7", label: "全天候通行" },
       ],
     },
     about: {
       eyebrow: "关于 Smarthub Connect",
       title: "成立、合规、办公空间——一个伙伴搞定。",
-      body: "自 2001 年起，Smarthub Connect 协助创业者、家族办公室与跨国企业在香港设立与运营。我们是持牌信托及公司服务供应商 (TCSP TC010264)，提供公司成立、秘书、会计、审计与税务服务，并于湾仔骆克道 88 号 25 楼设有甲级服务式办公室、虚拟办公室及会议室。",
+      body: "二十多年来，Smarthub Connect 协助创业者、家族办公室与跨国企业在香港设立与运营。我们是持牌信托及公司服务供应商 (TCSP TC010264)，提供公司成立、秘书、会计、审计与税务服务，并于湾仔骆克道 88 号 25 楼设有甲级服务式办公室、虚拟办公室及会议室。",
       body2:
         "我们属于 MCM Group 生态系统，客户可无缝接轨财富管理、金融科技与专业教育等姊妹公司服务——但 Smarthub 始终专注於最擅长的领域：确保您的香港业务合规、专业、办公无忧。",
       points: [
@@ -1017,7 +1017,7 @@ export const translations = {
     stats: {
       title: "重要的数字。",
       items: [
-        { num: "25+", label: "扎根香港年数" },
+        { num: "20+", label: "专业经验年数" },
         { num: "1,200+", label: "成立公司数目" },
         { num: "98%", label: "客户续约率" },
         { num: "6", label: "可用语言" },
@@ -1081,7 +1081,7 @@ export const translations = {
         whatsappLabel: "WhatsApp",
         emailLabel: "电邮",
         hoursLabel: "营业时间",
-        hours: "周一至五 9:00–18:30 · 周六 10:00–14:00",
+        hours: "周一至五 9:00–18:30",
       },
     },
     footer: {

@@ -37,7 +37,7 @@ import { pageContent } from "@/lib/i18n/page-content";
 import { RouterLink } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { CTABand } from "@/components/blocks/cta-band";
-import { ArrowRight, CalendarDays, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, MapPin, Sparkles } from "lucide-react";
 import { heroStats } from "@/lib/site-data";
 import { formatHKD } from "@/lib/booking-data";
 import { useHongKongRooms } from "@/lib/hong-kong-rooms";
@@ -172,16 +172,19 @@ export function HomePage() {
                 These are static (hard-coded) — license #, address, group membership. */}
             <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-slate-300">
               <div className="inline-flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-teal-300" />
-                <span>TCSP TC010264</span>
-              </div>
-              <div className="inline-flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-teal-300" />
                 <span>25/F, 88 Lockhart Road, Wan Chai</span>
               </div>
               <div className="inline-flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-teal-300" />
-                <span>MCM Group Member</span>
+                <a
+                  href="https://www.moneyconcepts.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-white/30 underline-offset-4 hover:text-white"
+                >
+                  MCM Group Member
+                </a>
               </div>
             </div>
           </div>

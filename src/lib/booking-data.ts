@@ -186,17 +186,17 @@ export const ROOMS: Room[] = [
   },
   {
     id: "meeting-b",
-    name: { en: "Meeting Room B", "zh-HK": "會議室 B", "zh-CN": "会议室 B" },
+    name: { en: "Ms Cheung's Room", "zh-HK": "張小姐會議室", "zh-CN": "张小姐会议室" },
     blurb: {
-      en: "Premium boardroom with video conferencing and harbour-side light.",
-      "zh-HK": "高級董事房，設視像會議設備，臨海採光。",
-      "zh-CN": "高级董事房，设视频会议设备，临海采光。",
+      en: "Private executive meeting room — Ms Cheung's room.",
+      "zh-HK": "私人行政會議室——張小姐房間。",
+      "zh-CN": "私人行政会议室——张小姐房间。",
     },
     capacity: 10,
     rate: 800,
     unit: "hour",
     emoji: "🏢",
-    image: "/mainAreaKaraoke.jpeg",
+    image: "/managerRoom.jpeg",
     formValue: "Meeting Room B / 會議室 B / 会议室 B",
   },
   {
@@ -211,7 +211,7 @@ export const ROOMS: Room[] = [
     rate: 1000,
     unit: "hour",
     emoji: "🎤",
-    image: "/mainAreaChairs.jpeg",
+    image: "/mainAreaKaraoke.jpeg",
     formValue: "Event Space / 活動場地 / 活动场地",
   },
   {
@@ -241,7 +241,7 @@ export const ROOMS: Room[] = [
     rate: 300,
     unit: "hour",
     emoji: "👔",
-    image: "/managerRoom.jpeg",
+    image: "/mainAreaChairs.jpeg",
     formValue: "Director Room / 總監辦公室 / 总监办公室",
   },
 ];
