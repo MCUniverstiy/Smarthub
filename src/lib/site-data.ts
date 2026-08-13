@@ -53,21 +53,21 @@ export type StatItem = { num: string; label: string };
  */
 export const heroStats: Record<Lang, StatItem[]> = {
   en: [
-    { num: "25+", label: "Years in Hong Kong" },
+    { num: "20+", label: "Years of experience" },
     { num: "1,200+", label: "Companies Served" },
-    { num: "TC010264", label: "TCSP Licensed" },
+    { num: "Grade-A", label: "Wan Chai office" },
     { num: "24/7", label: "Access Available" },
   ],
   "zh-HK": [
-    { num: "25+", label: "扎根香港年數" },
+    { num: "20+", label: "專業經驗年數" },
     { num: "1,200+", label: "服務公司數目" },
-    { num: "TC010264", label: "TCSP 持牌" },
+    { num: "甲級", label: "灣仔寫字樓" },
     { num: "24/7", label: "全天候通行" },
   ],
   "zh-CN": [
-    { num: "25+", label: "扎根香港年数" },
+    { num: "20+", label: "专业经验年数" },
     { num: "1,200+", label: "服务公司数目" },
-    { num: "TC010264", label: "TCSP 持牌" },
+    { num: "甲级", label: "湾仔写字楼" },
     { num: "24/7", label: "全天候通行" },
   ],
 };
@@ -83,7 +83,7 @@ export const heroStats: Record<Lang, StatItem[]> = {
  */
 export const sectionStats: Record<Lang, StatItem[]> = {
   en: [
-    { num: "25+", label: "Years in Hong Kong" },
+    { num: "20+", label: "Years of experience" },
     { num: "1,200+", label: "Companies Incorporated" },
     { num: "98%", label: "Client Retention" },
     { num: "6", label: "Languages Spoken" },
@@ -91,7 +91,7 @@ export const sectionStats: Record<Lang, StatItem[]> = {
     { num: "5 min", label: "From Wan Chai MTR" },
   ],
   "zh-HK": [
-    { num: "25+", label: "扎根香港年數" },
+    { num: "20+", label: "專業經驗年數" },
     { num: "1,200+", label: "成立公司數目" },
     { num: "98%", label: "客戶續約率" },
     { num: "6", label: "可用語言" },
@@ -99,7 +99,7 @@ export const sectionStats: Record<Lang, StatItem[]> = {
     { num: "5 分鐘", label: "距灣仔港鐵" },
   ],
   "zh-CN": [
-    { num: "25+", label: "扎根香港年数" },
+    { num: "20+", label: "专业经验年数" },
     { num: "1,200+", label: "成立公司数目" },
     { num: "98%", label: "客户续约率" },
     { num: "6", label: "可用语言" },
@@ -145,8 +145,18 @@ export const companyFacts = {
   addressZh: "香港灣仔駱克道 88 號 25 樓",
   addressCn: "香港湾仔骆克道 88 号 25 楼",
   domain: "smarthubc.com",
-  hours: "Mon–Fri 9:00–18:30 · Sat 10:00–14:00",
-  hoursZh: "週一至五 9:00–18:30 · 週六 10:00–14:00",
-  hoursCn: "周一至五 9:00–18:30 · 周六 10:00–14:00",
-  founded: "2001",
+  hours: "Mon–Fri 9:00–18:30",
+  hoursZh: "週一至五 9:00–18:30",
+  hoursCn: "周一至五 9:00–18:30",
+  founded: "2004",
 };
+
+/** Sister companies — shown on About with outbound links. */
+export const mcmEntities: { name: string; href: string; youAreHere?: boolean }[] = [
+  { name: "MCAH", href: "https://www.moneyconcepts.com/" },
+  { name: "MCAM", href: "https://www.moneyconcepts.com/" },
+  { name: "MCMWM", href: "https://www.moneyconcepts.com/" },
+  { name: "MCF", href: "https://www.moneyconcepts.com/" },
+  { name: "Smarthub", href: "/", youAreHere: true },
+  { name: "MCU Institute", href: "https://moneyconcepts.com/Independent-Broker-Dealer/Financial_Advisor/Education" },
+];

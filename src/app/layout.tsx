@@ -160,12 +160,7 @@ const jsonLd = {
       opens: "09:00",
       closes: "18:30",
     },
-    {
-      "@type": "OpeningHoursSpecification",
-      dayOfWeek: "Saturday",
-      opens: "10:00",
-      closes: "14:00",
-    },
+
   ],
   areaServed: { "@type": "Country", name: "Hong Kong" },
   knowsLanguage: ["en", "zh-Hant", "zh-Hans"],

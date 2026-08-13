@@ -189,7 +189,7 @@ export function ContactPage() {
     {
       icon: MessageCircle,
       label: t.contact.info.whatsappLabel,
-      value: t.topbar.whatsapp,
+      value: companyFacts.whatsapp,
       href: companyFacts.whatsappUrl,
     },
     {
@@ -456,7 +456,7 @@ export function ContactPage() {
                 className="border-teal-200 text-teal-700 hover:bg-teal-50"
               >
                 <a
-                  href="https://www.google.com/maps/search/?api=1&query=88+Lockhart+Road+Wan+Chai+Hong+Kong"
+                  href="https://www.google.com/maps/search/?api=1&query=88+Lockhart+Road+Wan+Chai+Hong+Kong&hl=en"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -468,7 +468,7 @@ export function ContactPage() {
             <div className="relative h-[420px] bg-slate-100">
               <iframe
                 title="Smarthub Connect office location"
-                src="https://www.google.com/maps?q=88+Lockhart+Road+Wan+Chai+Hong+Kong&output=embed"
+                src="https://www.google.com/maps?q=88+Lockhart+Road,+Wan+Chai,+Hong+Kong&hl=en&gl=HK&output=embed"
                 className="absolute inset-0 h-full w-full border-0"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"

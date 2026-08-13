@@ -238,7 +238,7 @@ export function Footer() {
                   className="flex items-center gap-2.5 transition hover:text-[#7ae2dc]"
                 >
                   <MessageCircle className="h-3.5 w-3.5 text-[#7ae2dc]" />
-                  WhatsApp 5501 3516
+                  {companyFacts.whatsapp}
                 </a>
               </li>
               {/* Email — mailto: link. */}
@@ -269,7 +269,9 @@ export function Footer() {
             {/* Green dot + "MCM Group Member" badge. */}
             <span className="inline-flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-[#7ae2dc]" />
-              MCM Group Member
+              <a href="https://www.moneyconcepts.com/" target="_blank" rel="noopener noreferrer" className="hover:text-white">
+                MCM Group Member
+              </a>
             </span>
             {/* Domain name shown for trust. */}
             <span>{companyFacts.domain}</span>

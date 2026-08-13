@@ -30,6 +30,7 @@ import { SectionHeading } from "@/components/blocks/section-heading";
 import { CTABand } from "@/components/blocks/cta-band";
 import { ShieldCheck, Users, Languages, HeartHandshake } from "lucide-react";
 import Image from "next/image";
+import { mcmEntities } from "@/lib/site-data";
 
 // Lucide icon components paired by index with the 4 values from pageContent.
 // If a 5th value were ever added, the fallback `?? ShieldCheck` keeps it safe.
@@ -181,28 +182,37 @@ export function AboutPage() {
             {/* 2x3 grid of MCM Group entity tiles. The Smarthub tile is visually
                 highlighted to show the visitor where this company sits in the group. */}
             <div className="grid grid-cols-2 gap-4">
-              {[
-                "MCAH",
-                "MCAM",
-                "MCMWM",
-                "MCF",
-                "Smarthub",
-                "MCU Institute",
-              ].map((name, i) => (
-                <div
-                  key={i}
-                  className={`rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur ${
-                    name === "Smarthub" ? "ring-2 ring-teal-400/40" : ""
-                  }`}
-                >
-                  <div className="font-display text-lg font-bold text-white">
-                    {name}
-                  </div>
-                  <div className="mt-1 text-xs text-slate-400">
-                    {name === "Smarthub" ? "You are here" : "Sister entity"}
-                  </div>
-                </div>
-              ))}
+              {mcmEntities.map((entity) => {
+                const inner = (
+                  <>
+                    <div className="font-display text-lg font-bold text-white">{entity.name}</div>
+                    <div className="mt-1 text-xs text-slate-400">
+                      {entity.youAreHere ? "You are here" : "Sister entity · visit site"}
+                    </div>
+                  </>
+                );
+                const className = `rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur transition hover:bg-white/10 ${
+                  entity.youAreHere ? "ring-2 ring-teal-400/40" : ""
+                }`;
+                if (entity.youAreHere) {
+                  return (
+                    <div key={entity.name} className={className}>
+                      {inner}
+                    </div>
+                  );
+                }
+                return (
+                  <a
+                    key={entity.name}
+                    href={entity.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={className}
+                  >
+                    {inner}
+                  </a>
+                );
+              })}
             </div>
           </div>
         </div>
